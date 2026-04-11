@@ -1,0 +1,56 @@
+name: Windows Build
+
+on:
+  push:
+    branches:
+      - main # أو master حسب اسم الفرع الأساسي عندك
+
+jobs:
+  build:
+    name: Build Flutter Windows
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        working-directory: clinic_management_system_v2/clinic_app
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Enable Windows Desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Remove Corrupted Windows Folder
+        run: if (Test-Path windows) { Remove-Item -Recurse -Force windows }
+        shell: powershell
+
+      - name: Create Windows Project
+        run: flutter create --platforms=windows .
+        
+      - name: Clean Project
+        run: flutter clean
+
+      # خطوة جديدة: حذف ملف pubspec.lock لتجنب تعارض إصدارات المكاتب
+      - name: Delete pubspec.lock
+        run: if (Test-Path pubspec.lock) { Remove-Item -Force pubspec.lock }
+        shell: powershell
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      # التعديل هنا: إضافة -v لطباعة تفاصيل الخطأ الحقيقي في حال وجوده
+      - name: Build Windows App (Verbose)
+        run: flutter build windows --release -v
+
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-app-release
+          path: clinic_management_system_v2/clinic_app/build/windows/x64/runner/Release/
+          
