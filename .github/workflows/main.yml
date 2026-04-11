@@ -50,5 +50,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-app-release
-          path: clinic_management_system_v2/clinic_app/build/windows/x64/runner/Release/
+          path: build/windows/x64/runner/Release/
           
