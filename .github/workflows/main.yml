@@ -10,9 +10,7 @@ jobs:
     name: Build Flutter Windows
     runs-on: windows-latest
 
-    defaults:
-      run:
-        working-directory: clinic_app
+  
 
     steps:
       - name: Checkout Repository
