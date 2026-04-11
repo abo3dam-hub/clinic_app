@@ -19,22 +19,80 @@ class _NavItem {
 }
 
 const _navItems = [
-  _NavItem(label: 'الرئيسية',      icon: Icons.dashboard_outlined,              activeIcon: Icons.dashboard,              route: '/dashboard'),
-  _NavItem(label: 'المرضى',        icon: Icons.people_outline,                  activeIcon: Icons.people,                 route: '/patients'),
-  _NavItem(label: 'الأطباء',       icon: Icons.medical_services_outlined,       activeIcon: Icons.medical_services,       route: '/doctors'),
-  _NavItem(label: 'الإجراءات',     icon: Icons.healing_outlined,                activeIcon: Icons.healing,                route: '/procedures'),
-  _NavItem(label: 'المواعيد',      icon: Icons.calendar_month_outlined,         activeIcon: Icons.calendar_month,         route: '/appointments'),
-  _NavItem(label: 'الزيارات',      icon: Icons.local_hospital_outlined,         activeIcon: Icons.local_hospital,         route: '/visits'),
-  _NavItem(label: 'الفواتير',      icon: Icons.receipt_long_outlined,           activeIcon: Icons.receipt_long,           route: '/invoices'),
-  _NavItem(label: 'المصروفات',     icon: Icons.payments_outlined,               activeIcon: Icons.payments,               route: '/expenses'),
-  _NavItem(label: 'المخزون',       icon: Icons.inventory_2_outlined,            activeIcon: Icons.inventory_2,            route: '/inventory'),
-  _NavItem(label: 'الخزينة',       icon: Icons.account_balance_wallet_outlined, activeIcon: Icons.account_balance_wallet, route: '/cash-box'),
-  _NavItem(label: 'التقارير',      icon: Icons.bar_chart_outlined,              activeIcon: Icons.bar_chart,              route: '/reports'),
+  _NavItem(
+      label: 'الرئيسية',
+      icon: Icons.dashboard_outlined,
+      activeIcon: Icons.dashboard,
+      route: '/dashboard'),
+  _NavItem(
+      label: 'المرضى',
+      icon: Icons.people_outline,
+      activeIcon: Icons.people,
+      route: '/patients'),
+  _NavItem(
+      label: 'الأطباء',
+      icon: Icons.medical_services_outlined,
+      activeIcon: Icons.medical_services,
+      route: '/doctors'),
+  _NavItem(
+      label: 'الإجراءات',
+      icon: Icons.healing_outlined,
+      activeIcon: Icons.healing,
+      route: '/procedures'),
+  _NavItem(
+      label: 'المواعيد',
+      icon: Icons.calendar_month_outlined,
+      activeIcon: Icons.calendar_month,
+      route: '/appointments'),
+  _NavItem(
+      label: 'الزيارات',
+      icon: Icons.local_hospital_outlined,
+      activeIcon: Icons.local_hospital,
+      route: '/visits'),
+  _NavItem(
+      label: 'الفواتير',
+      icon: Icons.receipt_long_outlined,
+      activeIcon: Icons.receipt_long,
+      route: '/invoices'),
+  _NavItem(
+      label: 'المصروفات',
+      icon: Icons.payments_outlined,
+      activeIcon: Icons.payments,
+      route: '/expenses'),
+  _NavItem(
+      label: 'المخزون',
+      icon: Icons.inventory_2_outlined,
+      activeIcon: Icons.inventory_2,
+      route: '/inventory'),
+  _NavItem(
+      label: 'الخزينة',
+      icon: Icons.account_balance_wallet_outlined,
+      activeIcon: Icons.account_balance_wallet,
+      route: '/cash-box'),
+  _NavItem(
+      label: 'التقارير',
+      icon: Icons.bar_chart_outlined,
+      activeIcon: Icons.bar_chart,
+      route: '/reports'),
+  // ── NEW: Accounting (double-entry, Trial Balance, P&L, Balance Sheet) ──
+  _NavItem(
+      label: 'المحاسبة',
+      icon: Icons.account_balance_outlined,
+      activeIcon: Icons.account_balance,
+      route: '/accounting'),
 ];
 
 const _bottomItems = [
-  _NavItem(label: 'النسخ الاحتياطي', icon: Icons.backup_outlined,   activeIcon: Icons.backup,   route: '/backup'),
-  _NavItem(label: 'الإعدادات',       icon: Icons.settings_outlined, activeIcon: Icons.settings, route: '/settings'),
+  _NavItem(
+      label: 'النسخ الاحتياطي',
+      icon: Icons.backup_outlined,
+      activeIcon: Icons.backup,
+      route: '/backup'),
+  _NavItem(
+      label: 'الإعدادات',
+      icon: Icons.settings_outlined,
+      activeIcon: Icons.settings,
+      route: '/settings'),
 ];
 
 class AppShell extends StatefulWidget {
@@ -68,11 +126,7 @@ class _AppShellState extends State<AppShell> {
                 onNav: (r) => context.go(r),
               ),
             ),
-            // FIX: Content area no longer has a separate _TopBar widget.
-            // That 64 px white band was the "empty gray rectangle" the user
-            // was seeing on every screen.  Page title is now shown in the
-            // sidebar header and the route title in the sidebar active item,
-            // which is more than enough context for a desktop app.
+            // Content area — no TopBar (that was the "gray long container" bug)
             Expanded(child: widget.child),
           ]),
         ),
@@ -107,26 +161,32 @@ class _Sidebar extends StatelessWidget {
                 border: Border(bottom: BorderSide(color: AppColors.border))),
             child: Row(children: [
               Container(
-                width: 36, height: 36,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.local_hospital, color: Colors.white, size: 20),
+                child: const Icon(Icons.local_hospital,
+                    color: Colors.white, size: 20),
               ),
               if (expanded) ...[
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text('عيادتي',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: AppColors.primary, fontWeight: FontWeight.w700)),
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          )),
                 ),
               ],
               IconButton(
                 onPressed: onToggle,
                 iconSize: 20,
                 icon: Icon(
-                  expanded ? Icons.keyboard_arrow_right : Icons.keyboard_arrow_left,
-                  color: AppColors.textSecondary),
+                    expanded
+                        ? Icons.keyboard_arrow_right
+                        : Icons.keyboard_arrow_left,
+                    color: AppColors.textSecondary),
               ),
             ]),
           ),
@@ -179,23 +239,30 @@ class _Tile extends StatelessWidget {
           onTap: onTap,
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             decoration: BoxDecoration(
-              color: active ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+              color: active
+                  ? AppColors.primary.withOpacity(0.1)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(children: [
               Icon(
                 active ? item.activeIcon : item.icon,
                 size: 20,
-                color: active ? AppColors.primary : AppColors.textSecondary,
+                color:
+                    active ? AppColors.primary : AppColors.textSecondary,
               ),
               if (expanded) ...[
                 const SizedBox(width: 10),
                 Text(item.label,
                     style: TextStyle(
-                      color: active ? AppColors.primary : AppColors.textSecondary,
-                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                      color: active
+                          ? AppColors.primary
+                          : AppColors.textSecondary,
+                      fontWeight:
+                          active ? FontWeight.w700 : FontWeight.w500,
                       fontSize: 13,
                     )),
               ],

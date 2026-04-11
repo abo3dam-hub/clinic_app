@@ -1,12 +1,19 @@
 // lib/features/expenses/data/repositories/expense_repository_impl.dart
+//
+// Change vs original:
+//   • Constructor takes JournalService
+//   • create() calls _journal.onExpenseRecorded after insert (fire-and-forget)
 
+import 'package:flutter/foundation.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../../invoices/domain/entities/invoice.dart';
+import '../../../accounting/domain/services/journal_service.dart';
 
 class ExpenseRepositoryImpl {
   final DatabaseHelper _db;
+  final JournalService _journal;
 
-  ExpenseRepositoryImpl(this._db);
+  ExpenseRepositoryImpl(this._db, this._journal);
 
   Expense _fromMap(Map<String, dynamic> m) => Expense(
         id: m['id'] as int,
@@ -45,21 +52,34 @@ class ExpenseRepositoryImpl {
     return rows.isEmpty ? null : _fromMap(rows.first);
   }
 
+  /// Inserts expense and fires DR Expenses | CR Cash journal entry.
   Future<int> create(Expense expense) async {
     _validate(expense);
     final now = DateTime.now().toIso8601String();
     final map = {
-      'category': expense.category,
+      'category':    expense.category,
       'description': expense.description,
-      'amount': expense.amount,
+      'amount':      expense.amount,
       'expense_date': expense.expenseDate,
-      'notes': expense.notes,
-      'created_at': now,
-      'updated_at': now,
+      'notes':       expense.notes,
+      'created_at':  now,
+      'updated_at':  now,
     };
     final id = await _db.insert('expenses', map);
     await _db.writeAuditLog(
         tableName: 'expenses', recordId: id, action: 'INSERT', newValues: map);
+
+    // Journal: DR Operating Expenses | CR Cash (fire-and-forget)
+    _journal.onExpenseRecorded(
+      expenseId: id,
+      amount: expense.amount,
+      date: expense.expenseDate,
+      description: expense.description,
+    ).catchError((e) {
+      debugPrint('[ExpenseRepo][Journal] Non-fatal journal error: $e');
+    });
+
+    debugPrint('[ExpenseRepo] create #$id amount=${expense.amount}');
     return id;
   }
 
@@ -67,12 +87,12 @@ class ExpenseRepositoryImpl {
     assert(expense.id != null);
     _validate(expense);
     final map = {
-      'category': expense.category,
+      'category':    expense.category,
       'description': expense.description,
-      'amount': expense.amount,
+      'amount':      expense.amount,
       'expense_date': expense.expenseDate,
-      'notes': expense.notes,
-      'updated_at': DateTime.now().toIso8601String(),
+      'notes':       expense.notes,
+      'updated_at':  DateTime.now().toIso8601String(),
     };
     await _db.update('expenses', map,
         where: 'id = ?', whereArgs: [expense.id]);

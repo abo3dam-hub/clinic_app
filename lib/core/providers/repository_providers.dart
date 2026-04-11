@@ -14,6 +14,9 @@ import '../../features/visits/data/repositories/visit_repository_impl.dart';
 import '../../features/invoices/data/repositories/invoice_repository_impl.dart';
 import '../../features/expenses/data/repositories/expense_repository_impl.dart';
 import '../../features/inventory/data/repositories/inventory_repository_impl.dart';
+import '../../features/accounting/data/repositories/ledger_repository.dart';
+
+// ─── Core repositories ─────────────────────────────────────────────────────
 
 final patientRepositoryProvider = Provider<PatientRepository>(
     (ref) => PatientRepositoryImpl(ref.watch(databaseHelperProvider)));
@@ -30,14 +33,30 @@ final procedureRepositoryProvider = Provider<ProcedureRepositoryImpl>(
 final visitRepositoryProvider = Provider<VisitRepositoryImpl>(
     (ref) => VisitRepositoryImpl(ref.watch(databaseHelperProvider)));
 
-final invoiceRepositoryProvider = Provider<InvoiceRepositoryImpl>(
-    (ref) => InvoiceRepositoryImpl(ref.watch(databaseHelperProvider)));
+// ─── Accounting ───────────────────────────────────────────────────────────────
 
-final expenseRepositoryProvider = Provider<ExpenseRepositoryImpl>(
-    (ref) => ExpenseRepositoryImpl(ref.watch(databaseHelperProvider)));
+final ledgerRepositoryProvider = Provider<LedgerRepository>(
+    (ref) => LedgerRepository(ref.watch(databaseHelperProvider)));
+
+// ─── Invoice: needs JournalService (declared in service_providers.dart)
+// Use a lazy provider defined in service_providers.dart to break the
+// circular dependency chain: repository → service → repository.
+// The invoice repository is therefore declared in service_providers.dart
+// where JournalService is already available.
+
+// ─── Expense: also needs JournalService — same pattern ────────────────────────
+// See service_providers.dart for invoiceRepositoryProvider and
+// expenseRepositoryProvider.
+
+// ─── Inventory ────────────────────────────────────────────────────────────────
 
 final inventoryRepositoryProvider = Provider<InventoryRepositoryImpl>(
     (ref) => InventoryRepositoryImpl(ref.watch(databaseHelperProvider)));
+
+// ─── CashBox ──────────────────────────────────────────────────────────────────
+
+// CashBoxRepositoryImpl is still declared here (no journal dependency)
+// ignore: always_use_package_imports
 
 final cashBoxRepositoryProvider = Provider<CashBoxRepositoryImpl>(
     (ref) => CashBoxRepositoryImpl(ref.watch(databaseHelperProvider)));

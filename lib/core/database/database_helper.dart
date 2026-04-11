@@ -7,30 +7,21 @@ import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-/// Singleton database helper for the clinic management system.
-/// Uses sqflite_common_ffi for Windows/Desktop support.
 class DatabaseHelper {
   static const String _dbName = 'clinic.db';
-  static const int _dbVersion = 1;
+  static const int _dbVersion = 2; // bumped: v1→v2 adds accounting tables
 
   DatabaseHelper._internal();
   static final DatabaseHelper instance = DatabaseHelper._internal();
 
   Database? _db;
-
-  // FIX #1 – Race-condition guard: prevents concurrent calls to _initDatabase()
-  // when multiple awaits hit `get database` before the first one completes.
   Completer<Database>? _dbCompleter;
-
-  // FIX #8 – Prevent sqfliteFfiInit() from being called more than once
-  // (e.g. after a database restore that calls _initDatabase() again).
   bool _ffiInitialized = false;
 
   // ─── Public access ───────────────────────────────────────────
 
   Future<Database> get database async {
     if (_db != null) return _db!;
-    // If another caller already started initialisation, wait for it.
     if (_dbCompleter != null) return _dbCompleter!.future;
 
     _dbCompleter = Completer<Database>();
@@ -39,7 +30,7 @@ class DatabaseHelper {
       _dbCompleter!.complete(_db!);
     } catch (e, st) {
       _dbCompleter!.completeError(e, st);
-      _dbCompleter = null; // allow retry on next call
+      _dbCompleter = null;
       rethrow;
     }
     return _db!;
@@ -48,16 +39,13 @@ class DatabaseHelper {
   // ─── Initialization ──────────────────────────────────────────
 
   Future<Database> _initDatabase() async {
-    // FIX #8 – Guard FFI initialisation so it only runs once per process.
     if (!_ffiInitialized) {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
       _ffiInitialized = true;
     }
-
     final dbPath = await _resolveDatabasePath();
     debugPrint('[DB] Opening database at: $dbPath');
-
     return openDatabase(
       dbPath,
       version: _dbVersion,
@@ -73,16 +61,12 @@ class DatabaseHelper {
   }
 
   Future<String> _getDatabaseDirectory() async {
-    // On Windows, store alongside the executable
     final exeDir = File(Platform.resolvedExecutable).parent.path;
     final dataDir = Directory(p.join(exeDir, 'data'));
-    if (!dataDir.existsSync()) {
-      dataDir.createSync(recursive: true);
-    }
+    if (!dataDir.existsSync()) dataDir.createSync(recursive: true);
     return dataDir.path;
   }
 
-  /// Enable foreign key enforcement for every connection.
   Future<void> _onConfigure(Database db) async {
     await db.execute('PRAGMA foreign_keys = ON');
     await db.execute('PRAGMA journal_mode = WAL');
@@ -91,24 +75,31 @@ class DatabaseHelper {
   Future<void> _onCreate(Database db, int version) async {
     debugPrint('[DB] Creating tables (version $version)');
     await _createAllTables(db);
+    await _seedChartOfAccounts(db); // seed COA on fresh install
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    debugPrint('[DB] Upgrading from $oldVersion to $newVersion');
-    // Future migrations go here
+    debugPrint('[DB] Upgrading $oldVersion → $newVersion');
+    if (oldVersion < 2) {
+      // Add the three accounting tables and seed COA
+      for (final sql in _accountingSchemaStatements()) {
+        await db.execute(sql);
+      }
+      await _seedChartOfAccounts(db);
+      debugPrint('[DB] Migration v1→v2 complete');
+    }
   }
 
   // ─── Schema ──────────────────────────────────────────────────
 
   Future<void> _createAllTables(Database db) async {
-    final statements = _schemaStatements();
-    for (final sql in statements) {
+    for (final sql in [..._coreSchemaStatements(), ..._accountingSchemaStatements()]) {
       await db.execute(sql);
     }
     debugPrint('[DB] All tables created successfully');
   }
 
-  List<String> _schemaStatements() => [
+  List<String> _coreSchemaStatements() => [
         // ── PATIENTS ──
         '''
         CREATE TABLE IF NOT EXISTS patients (
@@ -348,14 +339,101 @@ class DatabaseHelper {
           performed_at TEXT NOT NULL DEFAULT (datetime('now'))
         )
         ''',
-        'CREATE INDEX IF NOT EXISTS idx_audit_table    ON audit_log(table_name)',
-        'CREATE INDEX IF NOT EXISTS idx_audit_record   ON audit_log(record_id)',
+        'CREATE INDEX IF NOT EXISTS idx_audit_table     ON audit_log(table_name)',
+        'CREATE INDEX IF NOT EXISTS idx_audit_record    ON audit_log(record_id)',
         'CREATE INDEX IF NOT EXISTS idx_audit_performed ON audit_log(performed_at)',
       ];
 
+  // ── ACCOUNTING SCHEMA (v2) ────────────────────────────────────
+
+  List<String> _accountingSchemaStatements() => [
+        // ── CHART OF ACCOUNTS ──
+        '''
+        CREATE TABLE IF NOT EXISTS chart_of_accounts (
+          id         INTEGER PRIMARY KEY AUTOINCREMENT,
+          code       TEXT NOT NULL UNIQUE,
+          name       TEXT NOT NULL,
+          type       TEXT NOT NULL
+                         CHECK(type IN ('asset','liability','equity','revenue','expense')),
+          is_active  INTEGER NOT NULL DEFAULT 1,
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        ''',
+        'CREATE INDEX IF NOT EXISTS idx_coa_code ON chart_of_accounts(code)',
+        'CREATE INDEX IF NOT EXISTS idx_coa_type ON chart_of_accounts(type)',
+
+        // ── JOURNAL ENTRIES (header) ──
+        '''
+        CREATE TABLE IF NOT EXISTS journal_entries (
+          id          INTEGER PRIMARY KEY AUTOINCREMENT,
+          reference   TEXT,
+          entry_date  TEXT NOT NULL,
+          description TEXT NOT NULL,
+          source_type TEXT CHECK(source_type IN ('invoice','payment','expense','manual')),
+          source_id   INTEGER,
+          created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+        )
+        ''',
+        'CREATE INDEX IF NOT EXISTS idx_je_date   ON journal_entries(entry_date)',
+        'CREATE INDEX IF NOT EXISTS idx_je_source ON journal_entries(source_type, source_id)',
+
+        // ── JOURNAL ENTRY LINES (debit / credit) ──
+        '''
+        CREATE TABLE IF NOT EXISTS journal_entry_lines (
+          id          INTEGER PRIMARY KEY AUTOINCREMENT,
+          entry_id    INTEGER NOT NULL,
+          account_id  INTEGER NOT NULL,
+          debit       REAL    NOT NULL DEFAULT 0.0,
+          credit      REAL    NOT NULL DEFAULT 0.0,
+          description TEXT,
+          FOREIGN KEY (entry_id)   REFERENCES journal_entries(id)    ON DELETE CASCADE,
+          FOREIGN KEY (account_id) REFERENCES chart_of_accounts(id)  ON DELETE RESTRICT
+        )
+        ''',
+        'CREATE INDEX IF NOT EXISTS idx_jel_entry   ON journal_entry_lines(entry_id)',
+        'CREATE INDEX IF NOT EXISTS idx_jel_account ON journal_entry_lines(account_id)',
+      ];
+
+  // ── Seed Chart of Accounts ────────────────────────────────────
+
+  /// Seeds the standard COA for a medical clinic.
+  /// Uses INSERT OR IGNORE — safe to call more than once.
+  Future<void> _seedChartOfAccounts(Database db) async {
+    const accounts = [
+      // (code, name, type, sort_order)
+      ('1100', 'الخزينة (نقدية)',             'asset',      10),
+      ('1200', 'حسابات العملاء (مدينون)',     'asset',      20),
+      ('1300', 'مخزون لوازم طبية',            'asset',      30),
+      ('2100', 'حسابات الموردين (دائنون)',    'liability',  40),
+      ('2200', 'مصروفات مستحقة',              'liability',  50),
+      ('3000', 'حقوق الملكية',                'equity',     60),
+      ('3100', 'الأرباح المحتجزة',            'equity',     70),
+      ('4100', 'إيراد الخدمات الطبية',        'revenue',    80),
+      ('4200', 'إيرادات أخرى',                'revenue',    90),
+      ('5100', 'المصروفات التشغيلية',         'expense',   100),
+      ('5200', 'مصروفات الرواتب',             'expense',   110),
+      ('5300', 'مصروفات الإيجار',             'expense',   120),
+      ('5400', 'مصروفات الكهرباء والمياه',    'expense',   130),
+      ('5500', 'مصروفات المستلزمات الطبية',   'expense',   140),
+      ('5600', 'مصروفات الصيانة',             'expense',   150),
+      ('5900', 'مصروفات متنوعة',              'expense',   160),
+    ];
+    for (final (code, name, type, order) in accounts) {
+      await db.insert(
+        'chart_of_accounts',
+        {
+          'code': code, 'name': name,
+          'type': type, 'sort_order': order, 'is_active': 1,
+        },
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+    }
+    debugPrint('[DB] Chart of accounts seeded (${accounts.length} accounts)');
+  }
+
   // ─── Generic CRUD helpers ─────────────────────────────────────
 
-  /// Insert a row and return its new id.
   Future<int> insert(
     String table,
     Map<String, dynamic> values, {
@@ -365,7 +443,6 @@ class DatabaseHelper {
     return db.insert(table, values, conflictAlgorithm: conflictAlgorithm);
   }
 
-  /// Query rows from [table] with optional [where] clause.
   Future<List<Map<String, dynamic>>> query(
     String table, {
     String? where,
@@ -375,19 +452,14 @@ class DatabaseHelper {
     int? offset,
   }) async {
     final db = await database;
-    return db.query(
-      table,
-      where: where,
-      whereArgs: whereArgs,
-      orderBy: orderBy,
-      limit: limit,
-      offset: offset,
-    );
+    return db.query(table,
+        where: where,
+        whereArgs: whereArgs,
+        orderBy: orderBy,
+        limit: limit,
+        offset: offset);
   }
 
-  /// Update rows and return the number of affected rows.
-  /// FIX #2 – Copies [values] before injecting updated_at so the caller's
-  /// map literal is never mutated as a side-effect.
   Future<int> update(
     String table,
     Map<String, dynamic> values, {
@@ -395,13 +467,11 @@ class DatabaseHelper {
     required List<Object?> whereArgs,
   }) async {
     final db = await database;
-    // Use a copy so the original map passed by the caller is never modified.
     final copy = Map<String, dynamic>.of(values);
     copy['updated_at'] = DateTime.now().toIso8601String();
     return db.update(table, copy, where: where, whereArgs: whereArgs);
   }
 
-  /// Delete rows and return the number of affected rows.
   Future<int> delete(
     String table, {
     required String where,
@@ -411,7 +481,6 @@ class DatabaseHelper {
     return db.delete(table, where: where, whereArgs: whereArgs);
   }
 
-  /// Execute a raw SQL query that returns rows.
   Future<List<Map<String, dynamic>>> rawQuery(
     String sql, [
     List<Object?>? args,
@@ -420,16 +489,11 @@ class DatabaseHelper {
     return db.rawQuery(sql, args);
   }
 
-  /// Execute a raw SQL statement (no return value).
   Future<void> execute(String sql, [List<Object?>? args]) async {
     final db = await database;
     await db.execute(sql, args);
   }
 
-  // ─── Transaction helpers ──────────────────────────────────────
-
-  /// Run [action] inside a database transaction.
-  /// Rolls back automatically on exception.
   Future<T> runTransaction<T>(
     Future<T> Function(Transaction txn) action,
   ) async {
@@ -439,7 +503,6 @@ class DatabaseHelper {
 
   // ─── Audit Log ────────────────────────────────────────────────
 
-  /// Write an audit entry (fire-and-forget; errors are logged but not thrown).
   Future<void> writeAuditLog({
     required String tableName,
     required int recordId,
@@ -449,13 +512,11 @@ class DatabaseHelper {
   }) async {
     try {
       await insert('audit_log', {
-        'table_name': tableName,
-        'record_id': recordId,
-        'action': action,
-        // FIX #3 – Use dart:convert jsonEncode instead of a hand-rolled
-        // serialiser that wrapped all values in quotes (broke numbers/booleans).
-        'old_values': oldValues != null ? jsonEncode(oldValues) : null,
-        'new_values': newValues != null ? jsonEncode(newValues) : null,
+        'table_name':  tableName,
+        'record_id':   recordId,
+        'action':      action,
+        'old_values':  oldValues != null ? jsonEncode(oldValues) : null,
+        'new_values':  newValues != null ? jsonEncode(newValues) : null,
         'performed_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {
@@ -465,35 +526,25 @@ class DatabaseHelper {
 
   // ─── Backup & Restore ─────────────────────────────────────────
 
-  /// Copy the current database file to [destPath].
   Future<void> backupTo(String destPath) async {
     final db = await database;
-    // Close WAL checkpoint before copying
     await db.execute('PRAGMA wal_checkpoint(FULL)');
-    final src = File(db.path);
-    await src.copy(destPath);
+    await File(db.path).copy(destPath);
     debugPrint('[DB] Backup written to $destPath');
   }
 
-  /// Close the current DB and replace it with [sourcePath], then re-open.
-  /// FIX #8 – Resets the completer so the next `get database` call re-enters
-  /// the guarded initialisation path cleanly.
   Future<void> restoreFrom(String sourcePath) async {
     final db = await database;
     final currentPath = db.path;
     await db.close();
     _db = null;
-    _dbCompleter = null; // reset so next caller re-initialises properly
+    _dbCompleter = null;
     await File(sourcePath).copy(currentPath);
     debugPrint('[DB] Restored from $sourcePath');
-    // Re-open (FFI guard prevents double-init of sqfliteFfi).
     _db = await _initDatabase();
     _dbCompleter = Completer<Database>()..complete(_db!);
   }
 
-  // ─── Utilities ───────────────────────────────────────────────
-
-  /// Close the database (call on app dispose).
   Future<void> close() async {
     if (_db != null && _db!.isOpen) {
       await _db!.close();

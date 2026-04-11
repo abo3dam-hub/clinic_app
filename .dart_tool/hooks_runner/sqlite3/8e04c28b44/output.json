@@ -1,0 +1,17 @@
+{
+  "assets": [
+    {
+      "encoding": {
+        "file": "E:\\Projects\\clinic_ERP\\clinic_management_system_v2\\clinic_app\\.dart_tool\\hooks_runner\\shared\\sqlite3\\build\\download-179ca4da\\sqlite3.dll",
+        "id": "package:sqlite3/src/ffi/libsqlite3.g.dart",
+        "link_mode": {
+          "type": "dynamic_loading_bundle"
+        }
+      },
+      "type": "code_assets/code"
+    }
+  ],
+  "assets_for_linking": {},
+  "status": "success",
+  "timestamp": "2026-04-11 14:41:14.000"
+}

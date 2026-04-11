@@ -1,5 +1,6 @@
 // lib/features/expenses/presentation/screens/expenses_screen.dart
 
+import 'package:clinic_app/core/providers/service_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
