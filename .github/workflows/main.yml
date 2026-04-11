@@ -12,7 +12,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: clinic_management_system_v2/clinic_app
+        working-directory: clinic_app
 
     steps:
       - name: Checkout Repository
