@@ -24,12 +24,7 @@ jobs:
       - name: Enable Windows Desktop
         run: flutter config --enable-windows-desktop
 
-      - name: Remove Corrupted Windows Folder
-        run: if (Test-Path windows) { Remove-Item -Recurse -Force windows }
-        shell: powershell
-
-      - name: Create Windows Project
-        run: flutter create --platforms=windows .
+    
         
       - name: Clean Project
         run: flutter clean
@@ -41,7 +36,13 @@ jobs:
 
       - name: Install Dependencies
         run: flutter pub get
-
+      - name: Copy Windows App Icon
+        run: |
+          if (!(Test-Path "windows/runner/resources")) {
+          New-Item -ItemType Directory -Path "windows/runner/resources" -Force
+            }
+              Copy-Item "assets/images/logo.ico" "windows/runner/resources/app_icon.ico" -Force
+        shell: powershell
       # التعديل هنا: إضافة -v لطباعة تفاصيل الخطأ الحقيقي في حال وجوده
       - name: Build Windows App (Verbose)
         run: flutter build windows --release -v

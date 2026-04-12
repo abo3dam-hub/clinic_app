@@ -49,10 +49,7 @@ class DashboardScreen extends ConsumerWidget {
                 if (isWide) {
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: children.map((w) {
-                      if (w is SizedBox) return w;
-                      return Expanded(child: w);
-                    }).toList(),
+                    children: children.map((w) => Expanded(child: w)).toList(),
                   );
                 }
                 return Column(
@@ -96,7 +93,7 @@ class DashboardScreen extends ConsumerWidget {
               ]).animate().fadeIn(duration: 600.ms, delay: 200.ms).slideY(begin: 0.05);
             },
           ),
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.xxl),
         ],
       ),
     );
@@ -115,8 +112,8 @@ class _Greeting extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 60,
-          height: 60,
+          width: 120,
+          height: 120,
           decoration: BoxDecoration(
             color: Colors.white,
             shape: BoxShape.circle,
@@ -254,28 +251,44 @@ class _ModernStatCardState extends State<_ModernStatCard> {
                BoxShadow(color: widget.gradient.last.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4)),
           ],
         ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
+        clipBehavior: Clip.antiAlias, // Keep icon clipped inside card
+        child: Stack(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(widget.title, style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600)),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
-                  child: Icon(widget.icon, color: Colors.white, size: 20),
-                ),
-              ],
+            // Large background icon (4x larger)
+            Positioned(
+              bottom: -10,
+              left: -10,
+              child: Icon(
+                widget.icon,
+                size: 80,
+                color: Colors.white.withOpacity(0.15),
+              ),
             ),
-            const Spacer(),
-            Text(widget.value, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
-            const SizedBox(height: 4),
-            Text(widget.subtitle, style: const TextStyle(color: Colors.white60, fontSize: 12, fontWeight: FontWeight.w500)),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(widget.title, 
+                          style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+                      ),
+                      Icon(widget.icon, color: Colors.white.withOpacity(0.8), size: 18),
+                    ],
+                  ),
+                  const Spacer(),
+                  Text(widget.value, 
+                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                  const SizedBox(height: 4),
+                  Text(widget.subtitle, 
+                    style: const TextStyle(color: Colors.white60, fontSize: 11, fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -537,7 +550,7 @@ class _DoctorStatsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(title: 'أداء الأطباء اليوم (ERP)'),
+          const SectionHeader(title: 'أداء الأطباء اليوم '),
           const SizedBox(height: AppSpacing.md),
           if (report.doctorStats.isEmpty)
             const EmptyState(
