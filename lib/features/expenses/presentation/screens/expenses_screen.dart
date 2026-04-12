@@ -164,8 +164,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
 
     await showDialog(
       context: ctx,
-      builder: (_) => StatefulBuilder(
-        builder: (_, setSt) => AlertDialog(
+      builder: (innerCtx) => StatefulBuilder(
+        builder: (innerCtx, setSt) => AlertDialog(
           title: Text(existing == null ? 'مصروف جديد' : 'تعديل المصروف'),
           content: SizedBox(
             width: 420,
@@ -248,13 +248,13 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx),
+                onPressed: () => Navigator.pop(innerCtx),
                 child: const Text('إلغاء')),
             PrimaryButton(
               label: existing == null ? 'إضافة' : 'حفظ',
               onPressed: () async {
                 if (!formKey.currentState!.validate()) return;
-                Navigator.pop(ctx);
+                Navigator.pop(innerCtx);
                 final now = DateTime.now();
                 final expense = Expense(
                   id: existing?.id,
@@ -353,7 +353,7 @@ class _FiltersRow extends StatelessWidget {
         const SizedBox(width: AppSpacing.md),
         Expanded(
           child: DropdownButtonFormField<String?>(
-            initialValue: filter.category,
+            value: categories.contains(filter.category) ? filter.category : null,
             decoration: const InputDecoration(
                 labelText: 'الفئة',
                 prefixIcon: Icon(Icons.category_outlined, size: 18)),

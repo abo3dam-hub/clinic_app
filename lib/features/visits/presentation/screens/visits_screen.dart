@@ -204,19 +204,20 @@ class _VisitFormScreenState extends ConsumerState<VisitFormScreen> {
       );
 
       final repo = ref.read(visitRepositoryProvider);
+      int finalId = widget.visitId ?? 0;
       if (_isEdit) {
         await repo.update(visit);
         if (mounted) showSnack(context, 'تم تحديث الزيارة');
       } else {
-        await repo.create(visit);
+        finalId = await repo.create(visit);
         if (mounted) showSnack(context, 'تم إضافة الزيارة');
       }
       ref.invalidate(visitsProvider);
       
-      final todayStr = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final todayStr = ClinicDateUtils.todayString();
       ref.invalidate(dailyReportProvider(todayStr));
       
-      if (mounted) context.go('/visits');
+      if (mounted) context.go('/visits/$finalId');
     } catch (e) {
       if (mounted) showSnack(context, 'خطأ: $e', error: true);
     } finally {

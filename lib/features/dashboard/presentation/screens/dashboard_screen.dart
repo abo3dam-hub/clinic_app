@@ -178,28 +178,28 @@ class _StatsGrid extends StatelessWidget {
           children: [
             _ModernStatCard(
               title: 'الزيارات اليوم',
-              value: '\${report.totalVisits}',
-              subtitle: '\${report.totalPatients} مريض',
+              value: '${report.totalVisits}',
+              subtitle: '${report.totalPatients} مريض',
               icon: Icons.personal_injury,
               gradient: const [Color(0xFF3b82f6), Color(0xFF2563eb)],
             ),
             _ModernStatCard(
               title: 'الإيرادات اليومية',
-              value: '\${fmt.format(report.totalInvoiced)} \$',
+              value: '${fmt.format(report.totalInvoiced)} \$',
               subtitle: 'إجمالي الفواتير الصادرة',
               icon: Icons.monetization_on,
               gradient: const [Color(0xFF10b981), Color(0xFF059669)],
             ),
             _ModernStatCard(
               title: 'التحصيل',
-              value: '\${fmt.format(report.totalCollected)} \$',
+              value: '${fmt.format(report.totalCollected)} \$',
               subtitle: 'نقد / بطاقة / تحويل',
               icon: Icons.account_balance_wallet,
               gradient: const [Color(0xFF8b5cf6), Color(0xFF7c3aed)],
             ),
             _ModernStatCard(
               title: 'صافي الخزينة',
-              value: '\${fmt.format(report.netCash)} \$',
+              value: '${fmt.format(report.netCash)} \$',
               subtitle: 'بعد الخصم والمصروفات',
               icon: Icons.savings,
               gradient: report.netCash >= 0 ? const [Color(0xFFf59e0b), Color(0xFFd97706)] : const [Color(0xFFef4444), Color(0xFFdc2626)],
@@ -382,7 +382,7 @@ class _ApptLegendItem extends StatelessWidget {
         Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(height: 4),
         Text(label, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-        Text('\$count', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        Text('$count', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
       ],
     );
   }
@@ -439,9 +439,9 @@ class _LowStockCard extends StatelessWidget {
                       Expanded(
                         child: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                       ),
-                      Text('\${item.quantity}', style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
+                      Text('${item.quantity}', style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold)),
                       const SizedBox(width: 4),
-                      Text('الحد: \${item.minQuantity}', style: const TextStyle(color: AppColors.textHint, fontSize: 11)),
+                      Text('الحد: ${item.minQuantity}', style: const TextStyle(color: AppColors.textHint, fontSize: 11)),
                     ],
                   );
                 },
@@ -515,7 +515,7 @@ class _CashRow extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label, style: TextStyle(color: bold ? AppColors.textPrimary : AppColors.textSecondary, fontWeight: bold ? FontWeight.w700 : FontWeight.w600, fontSize: size - 1)),
-            Text('\$value \$', style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: size)),
+            Text('$value \$', style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: size)),
           ],
         ),
       );
@@ -580,16 +580,16 @@ class _DoctorRow extends StatelessWidget {
                 children: [
                   Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.textPrimary)),
                   const SizedBox(height: 2),
-                  Text('\$visits مريض عاينهم', style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
+                  Text('$visits مريض عاينهم', style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600)),
                 ],
               ),
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('\$revenue \$', style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.w800, fontSize: 14)),
+                Text('$revenue \$', style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.w800, fontSize: 14)),
                 const SizedBox(height: 2),
-                Text('عمولة: \$commission', style: const TextStyle(color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.bold)),
+                Text('عمولة: $commission', style: const TextStyle(color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.bold)),
               ],
             ),
           ],

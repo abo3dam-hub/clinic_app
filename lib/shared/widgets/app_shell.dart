@@ -74,7 +74,6 @@ const _navItems = [
       icon: Icons.bar_chart_outlined,
       activeIcon: Icons.bar_chart,
       route: '/reports'),
-  // ── NEW: Accounting (double-entry, Trial Balance, P&L, Balance Sheet) ──
   _NavItem(
       label: 'المحاسبة',
       icon: Icons.account_balance_outlined,
@@ -110,15 +109,29 @@ class _AppShellState extends State<AppShell> {
   static const double _cw = 64;
 
   @override
-  Widget build(BuildContext context) => Directionality(
-        textDirection: TextDirection.rtl,
-        child: Scaffold(
-          backgroundColor: AppColors.surface,
-          body: Row(children: [
+  Widget build(BuildContext context) {
+    // Explicitly force RTL logic for the entire shell
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        backgroundColor: AppColors.surface,
+        body: Row(
+          children: [
+            // Right Sidebar (First in RTL Row)
             AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
               width: _expanded ? _ew : _cw,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceCard,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 16,
+                    offset: const Offset(-4, 0), // Shadow towards the content (left)
+                  ),
+                ],
+              ),
               child: _Sidebar(
                 expanded: _expanded,
                 currentRoute: widget.currentRoute,
@@ -126,11 +139,18 @@ class _AppShellState extends State<AppShell> {
                 onNav: (r) => context.go(r),
               ),
             ),
-            // Content area — no TopBar (that was the "gray long container" bug)
-            Expanded(child: widget.child),
-          ]),
+            // Content Area (Left side)
+            Expanded(
+              child: Container(
+                color: AppColors.surface,
+                child: widget.child,
+              ),
+            ),
+          ],
         ),
-      );
+      ),
+    );
+  }
 }
 
 class _Sidebar extends StatelessWidget {
@@ -147,82 +167,78 @@ class _Sidebar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surfaceCard,
-          boxShadow: AppShadows.sidebar,
-        ),
-        child: Column(children: [
-          // ── Logo / header ──────────────────────────────────────
-          Container(
-            height: 64,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppColors.border))),
-            child: Row(children: [
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Header / Logo
+        Container(
+          height: 64,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: AppColors.border, width: 0.5)),
+          ),
+          child: Row(
+            children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.border, width: 1)),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.asset(
-                    'assets/images/logo.png',
-                    fit: BoxFit.cover,
-                  ),
+                  color: AppColors.primarySurface,
+                  borderRadius: BorderRadius.circular(10),
                 ),
+                child: const Icon(Icons.local_hospital, color: AppColors.primary, size: 24),
               ),
               if (expanded) ...[
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Text('عيادتي',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w700,
-                          )),
+                  child: Text(
+                    'نظام العيادة',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
                 ),
               ],
               IconButton(
                 onPressed: onToggle,
-                iconSize: 20,
                 icon: Icon(
-                    expanded
-                        ? Icons.keyboard_arrow_right
-                        : Icons.keyboard_arrow_left,
-                    color: AppColors.textSecondary),
+                  expanded ? Icons.chevron_right : Icons.chevron_left,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
               ),
-            ]),
+            ],
           ),
+        ),
 
-          // ── Nav items ─────────────────────────────────────────
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              children: _navItems
-                  .map((item) => _Tile(
-                        item: item,
-                        active: currentRoute.startsWith(item.route),
-                        expanded: expanded,
-                        onTap: () => onNav(item.route),
-                      ))
-                  .toList(),
-            ),
+        // Navigation Items
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            children: _navItems
+                .map((item) => _Tile(
+                      item: item,
+                      active: currentRoute.startsWith(item.route),
+                      expanded: expanded,
+                      onTap: () => onNav(item.route),
+                    ))
+                .toList(),
           ),
+        ),
 
-          // ── Bottom items ──────────────────────────────────────
-          const Divider(height: 1),
-          ..._bottomItems.map((item) => _Tile(
-                item: item,
-                active: currentRoute.startsWith(item.route),
-                expanded: expanded,
-                onTap: () => onNav(item.route),
-              )),
-          const SizedBox(height: 8),
-        ]),
-      );
+        const Divider(height: 1, color: AppColors.border),
+        // Bottom Items
+        ..._bottomItems.map((item) => _Tile(
+              item: item,
+              active: currentRoute.startsWith(item.route),
+              expanded: expanded,
+              onTap: () => onNav(item.route),
+            )),
+        const SizedBox(height: 12),
+      ],
+    );
+  }
 }
 
 class _Tile extends StatelessWidget {
@@ -239,41 +255,41 @@ class _Tile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Tooltip(
-        message: expanded ? '' : item.label,
-        child: InkWell(
-          onTap: onTap,
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            decoration: BoxDecoration(
-              color: active
-                  ? AppColors.primary.withValues(alpha: 0.1)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(children: [
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: expanded ? '' : item.label,
+      child: InkWell(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          decoration: BoxDecoration(
+            color: active ? AppColors.primary.withOpacity(0.08) : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
               Icon(
                 active ? item.activeIcon : item.icon,
                 size: 20,
-                color:
-                    active ? AppColors.primary : AppColors.textSecondary,
+                color: active ? AppColors.primary : AppColors.textSecondary,
               ),
               if (expanded) ...[
-                const SizedBox(width: 10),
-                Text(item.label,
-                    style: TextStyle(
-                      color: active
-                          ? AppColors.primary
-                          : AppColors.textSecondary,
-                      fontWeight:
-                          active ? FontWeight.w700 : FontWeight.w500,
-                      fontSize: 13,
-                    )),
+                const SizedBox(width: 12),
+                Text(
+                  item.label,
+                  style: TextStyle(
+                    color: active ? AppColors.primary : AppColors.textPrimary,
+                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
               ],
-            ]),
+            ],
           ),
         ),
-      );
+      ),
+    );
+  }
 }

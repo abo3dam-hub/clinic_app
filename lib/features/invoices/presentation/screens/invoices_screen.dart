@@ -1,6 +1,10 @@
 // lib/features/invoices/presentation/screens/invoices_screen.dart
 //
-// Fix: all monetary values now display "\$" (USD) instead of "ر.س" (SAR).
+// Refined ERP Invoice Management:
+//   • Lists all invoices with advanced filtering.
+//   • Added "New Manual Invoice" creation without requiring a visit.
+//   • Added "Quick Payment" directly from the list.
+//   • Fixed character encoding issues and UI freezes.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +15,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/invoice.dart';
 import '../../../../core/providers/repository_providers.dart';
+import '../../../../core/utils/date_utils.dart';
 
 // ─── Currency helper — single source of truth ─────────────────────────────────
 String _money(NumberFormat fmt, double amount) => '\$${fmt.format(amount)}';
@@ -28,12 +33,26 @@ class InvoicesScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         children: [
-          _InvoiceFilters(
-            filter: filter,
-            onFilterChanged: (f) =>
-                ref.read(invoiceFilterProvider.notifier).state = f,
+          // Toolbar Row
+          Row(
+            children: [
+              Expanded(
+                child: _InvoiceFilters(
+                  filter: filter,
+                  onFilterChanged: (f) =>
+                      ref.read(invoiceFilterProvider.notifier).state = f,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              PrimaryButton(
+                label: 'فاتورة جديدة',
+                icon: Icons.add,
+                onPressed: () => _showManualInvoiceDialog(context, ref),
+              ),
+            ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.lg),
+
           Expanded(
             child: invoicesAsync.when(
               loading: () => const LoadingView(),
@@ -71,20 +90,36 @@ class InvoicesScreen extends ConsumerWidget {
                                         fontWeight: FontWeight.w600)),
                                 Text(_money(fmt, inv.paidAmount),
                                     style: const TextStyle(
-                                        color: AppColors.success)),
+                                        color: AppColors.success, fontWeight: FontWeight.w600)),
                                 Text(_money(fmt, inv.remainingAmount),
                                     style: TextStyle(
+                                        fontWeight: FontWeight.w700,
                                         color: inv.remainingAmount > 0
                                             ? AppColors.error
                                             : AppColors.textHint)),
                                 InvoiceStatusChip(status: inv.status.value),
-                                IconActionButton(
-                                  icon: Icons.visibility_outlined,
-                                  tooltip: 'عرض',
-                                  onPressed: () =>
-                                      context.go('/invoices/${inv.id}'),
-                                  color: AppColors.primary,
-                                  bgColor: AppColors.primarySurface,
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (inv.status != InvoiceStatus.paid && !inv.isLocked)
+                                      IconActionButton(
+                                        icon: Icons.add_card_outlined,
+                                        tooltip: 'دفع سريع',
+                                        onPressed: () => _showQuickPaymentDialog(
+                                            context, ref, inv, fmt),
+                                        color: AppColors.success,
+                                        bgColor: AppColors.successSurface,
+                                      ),
+                                    const SizedBox(width: 8),
+                                    IconActionButton(
+                                      icon: Icons.visibility_outlined,
+                                      tooltip: 'عرض',
+                                      onPressed: () =>
+                                          context.go('/invoices/${inv.id}'),
+                                      color: AppColors.primary,
+                                      bgColor: AppColors.primarySurface,
+                                    ),
+                                  ],
                                 ),
                               ])
                           .toList(),
@@ -110,15 +145,15 @@ class _InvoiceFilters extends StatelessWidget {
         children: [
           Expanded(
             child: DropdownButtonFormField<String?>(
-              initialValue: filter.status,
+              value: filter.status,
               decoration: const InputDecoration(
                   labelText: 'الحالة',
                   prefixIcon: Icon(Icons.filter_list)),
               items: const [
-                DropdownMenuItem(value: null,       child: Text('الكل')),
-                DropdownMenuItem(value: 'unpaid',   child: Text('غير مدفوعة')),
-                DropdownMenuItem(value: 'partial',  child: Text('جزئية')),
-                DropdownMenuItem(value: 'paid',     child: Text('مدفوعة')),
+                DropdownMenuItem(value: null, child: Text('كل الحالات')),
+                DropdownMenuItem(value: 'unpaid', child: Text('غير مدفوعة')),
+                DropdownMenuItem(value: 'partial', child: Text('جزئية')),
+                DropdownMenuItem(value: 'paid', child: Text('مدفوعة')),
               ],
               onChanged: (v) => onFilterChanged(InvoiceFilter(
                   status: v,
@@ -158,22 +193,12 @@ class _DateFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ctrl = TextEditingController(text: value ?? '');
-    return TextField(
-      controller: ctrl,
+    return AppTextField(
+      label: label,
       readOnly: true,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: const Icon(Icons.calendar_today_outlined, size: 18),
-        suffixIcon: value != null
-            ? IconButton(
-                icon: const Icon(Icons.clear, size: 16),
-                onPressed: () {
-                  ctrl.clear();
-                  onChanged(null);
-                })
-            : null,
-      ),
+      hint: 'اختر التاريخ',
+      prefix: const Icon(Icons.calendar_today_outlined, size: 18),
+      controller: TextEditingController(text: value ?? ''),
       onTap: () async {
         final picked = await showDatePicker(
           context: context,
@@ -185,11 +210,7 @@ class _DateFilter extends StatelessWidget {
           locale: const Locale('ar'),
         );
         if (picked != null) {
-          final s = '${picked.year.toString().padLeft(4, '0')}-'
-              '${picked.month.toString().padLeft(2, '0')}-'
-              '${picked.day.toString().padLeft(2, '0')}';
-          ctrl.text = s;
-          onChanged(s);
+          onChanged(ClinicDateUtils.formatDate(picked));
         }
       },
     );
@@ -204,8 +225,8 @@ class InvoiceDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final invoiceAsync  = ref.watch(invoiceByIdProvider(invoiceId));
-    final itemsAsync    = ref.watch(invoiceItemsProvider(invoiceId));
+    final invoiceAsync = ref.watch(invoiceByIdProvider(invoiceId));
+    final itemsAsync = ref.watch(invoiceItemsProvider(invoiceId));
     final paymentsAsync = ref.watch(invoicePaymentsProvider(invoiceId));
     final fmt = NumberFormat('#,##0.00', 'en');
 
@@ -213,7 +234,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: invoiceAsync.when(
         loading: () => const LoadingView(),
-        error:   (e, _) => ErrorView(message: e.toString()),
+        error: (e, _) => ErrorView(message: e.toString()),
         data: (invoice) {
           if (invoice == null) {
             return const ErrorView(message: 'الفاتورة غير موجودة');
@@ -243,7 +264,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ── Left: info + items ─────────────────────
+                  // Left Side: Invoice Items
                   Expanded(
                     flex: 3,
                     child: Column(children: [
@@ -269,13 +290,16 @@ class InvoiceDetailScreen extends ConsumerWidget {
                             const SizedBox(height: AppSpacing.md),
                             itemsAsync.when(
                               loading: () => const LoadingView(),
-                              error:   (e, _) => ErrorView(message: e.toString()),
+                              error: (e, _) => ErrorView(message: e.toString()),
                               data: (items) => items.isEmpty
                                   ? const EmptyState(title: 'لا توجد بنود')
                                   : AppTable(
                                       headers: const [
-                                        'الوصف', 'الكمية', 'السعر',
-                                        'الخصم', 'الإجمالي'
+                                        'الوصف',
+                                        'الكمية',
+                                        'السعر',
+                                        'الخصم',
+                                        'الإجمالي'
                                       ],
                                       rows: items
                                           .map((item) => [
@@ -298,9 +322,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                                 bold: true),
                             _TotalRow('المدفوع', _money(fmt, invoice.paidAmount),
                                 color: AppColors.success),
-                            _TotalRow(
-                                'المتبقي',
-                                _money(fmt, invoice.remainingAmount),
+                            _TotalRow('المتبقي', _money(fmt, invoice.remainingAmount),
                                 color: invoice.remainingAmount > 0
                                     ? AppColors.error
                                     : AppColors.textHint,
@@ -312,7 +334,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                   ),
                   const SizedBox(width: AppSpacing.md),
 
-                  // ── Right: payments ───────────────────────
+                  // Right Side: Payments
                   Expanded(
                     flex: 2,
                     child: AppCard(
@@ -321,22 +343,20 @@ class InvoiceDetailScreen extends ConsumerWidget {
                         children: [
                           SectionHeader(
                             title: 'المدفوعات',
-                            action: invoice.status != InvoiceStatus.paid &&
-                                    !invoice.isLocked
+                            action: invoice.status != InvoiceStatus.paid && !invoice.isLocked
                                 ? PrimaryButton(
                                     label: 'إضافة دفعة',
                                     icon: Icons.add,
                                     compact: true,
                                     onPressed: () =>
-                                        _showAddPaymentDialog(
-                                            context, ref, invoice, fmt),
+                                        _showQuickPaymentDialog(context, ref, invoice, fmt),
                                   )
                                 : null,
                           ),
                           const SizedBox(height: AppSpacing.md),
                           paymentsAsync.when(
                             loading: () => const LoadingView(),
-                            error:   (e, _) => ErrorView(message: e.toString()),
+                            error: (e, _) => ErrorView(message: e.toString()),
                             data: (payments) => payments.isEmpty
                                 ? const EmptyState(
                                     title: 'لا توجد دفعات',
@@ -367,103 +387,19 @@ class InvoiceDetailScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _showAddPaymentDialog(BuildContext context, WidgetRef ref,
-      Invoice inv, NumberFormat fmt) async {
-    final amtCtrl = TextEditingController();
-    String method = 'cash';
-
-    await showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSt) => AlertDialog(
-          title: const Text('إضافة دفعة'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'المتبقي: ${_money(fmt, inv.remainingAmount)}',
-                style: const TextStyle(
-                    color: AppColors.error, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AppTextField(
-                label: 'المبلغ (\$)',
-                required: true,
-                controller: amtCtrl,
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AppDropdown<String>(
-                label: 'طريقة الدفع',
-                value: method,
-                items: const [
-                  DropdownMenuItem(value: 'cash',     child: Text('نقدي')),
-                  DropdownMenuItem(value: 'card',     child: Text('بطاقة')),
-                  DropdownMenuItem(value: 'transfer', child: Text('تحويل')),
-                  DropdownMenuItem(value: 'other',    child: Text('أخرى')),
-                ],
-                onChanged: (v) => setSt(() => method = v ?? 'cash'),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('إلغاء')),
-            PrimaryButton(
-              label: 'تأكيد',
-              onPressed: () async {
-                final amount = double.tryParse(amtCtrl.text);
-                if (amount == null || amount <= 0) return;
-                Navigator.pop(ctx);
-                try {
-                  final now = DateTime.now();
-                  await ref.read(invoiceRepositoryProvider).addPayment(
-                        Payment(
-                          invoiceId: inv.id!,
-                          amount: amount,
-                          paymentDate:
-                              '${now.year.toString().padLeft(4, '0')}-'
-                              '${now.month.toString().padLeft(2, '0')}-'
-                              '${now.day.toString().padLeft(2, '0')}',
-                          method: PaymentMethodX.fromString(method),
-                          createdAt: now,
-                        ),
-                      );
-                  ref.invalidate(invoiceByIdProvider(inv.id!));
-                  ref.invalidate(invoicePaymentsProvider(inv.id!));
-                  final todayStr = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-                  ref.invalidate(dailyReportProvider(todayStr));
-                  ref.invalidate(cashBoxTodayProvider);
-                  if (context.mounted) showSnack(context, 'تم تسجيل الدفعة');
-                } catch (e) {
-                  if (context.mounted)
-                    showSnack(context, 'خطأ: $e', error: true);
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-    amtCtrl.dispose();
-  }
-
   Future<void> _deletePayment(
       BuildContext context, WidgetRef ref, int paymentId) async {
     final ok = await ConfirmDialog.show(context,
         title: 'حذف دفعة',
-        message: 'هل تريد حذف هذه الدفعة؟',
+        message: 'هل تريد حذف هذه الدفعة؟ سيتم تحديث حالة الفاتورة تلقائياً.',
         isDanger: true);
     if (ok) {
       try {
         await ref.read(invoiceRepositoryProvider).deletePayment(paymentId);
         ref.invalidate(invoiceByIdProvider(invoiceId));
         ref.invalidate(invoicePaymentsProvider(invoiceId));
-        final now = DateTime.now();
-        final todayStr = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-        ref.invalidate(dailyReportProvider(todayStr));
+        ref.invalidate(invoicesProvider);
+        ref.invalidate(dailyReportProvider(ClinicDateUtils.todayString()));
         ref.invalidate(cashBoxTodayProvider);
         if (context.mounted) showSnack(context, 'تم حذف الدفعة');
       } catch (e) {
@@ -473,7 +409,182 @@ class InvoiceDetailScreen extends ConsumerWidget {
   }
 }
 
-// ─── Helper Widgets ───────────────────────────────────────────────────────────
+// ─── Dialogs ──────────────────────────────────────────────────────────────────
+
+Future<void> _showManualInvoiceDialog(BuildContext context, WidgetRef ref) async {
+  int? selectedPatientId;
+  final descCtrl = TextEditingController();
+  final priceCtrl = TextEditingController();
+  final notesCtrl = TextEditingController();
+  final patientsAsync = ref.read(patientNotifierProvider);
+
+  await showDialog(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setSt) => AlertDialog(
+        title: const Text('فاتورة يدوية جديدة'),
+        content: SizedBox(
+          width: 450,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                patientsAsync.when(
+                  loading: () => const LoadingView(),
+                  error: (e, _) => ErrorView(message: e.toString()),
+                  data: (patients) => AppDropdown<int>(
+                    label: 'المريض',
+                    required: true,
+                    value: selectedPatientId,
+                    items: patients
+                        .map((p) => DropdownMenuItem(value: p.id!, child: Text(p.name)))
+                        .toList(),
+                    onChanged: (v) => setSt(() => selectedPatientId = v),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                AppTextField(
+                  label: 'الوصف / الخدمة',
+                  required: true,
+                  controller: descCtrl,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                AppTextField(
+                  label: 'المبلغ (\$)',
+                  required: true,
+                  controller: priceCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                AppTextField(
+                  label: 'ملاحظات',
+                  controller: notesCtrl,
+                  maxLines: 2,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          PrimaryButton(
+            label: 'إصدار الفاتورة',
+            onPressed: () async {
+              if (selectedPatientId == null || descCtrl.text.isEmpty) return;
+              final price = double.tryParse(priceCtrl.text) ?? 0;
+              if (price <= 0) return;
+
+              Navigator.pop(ctx);
+              try {
+                final now = DateTime.now();
+                final invoiceId = await ref.read(invoiceRepositoryProvider).create(Invoice(
+                      patientId: selectedPatientId!,
+                      invoiceDate: ClinicDateUtils.todayString(),
+                      totalAmount: price,
+                      netAmount: price,
+                      notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
+                      createdAt: now,
+                      updatedAt: now,
+                    ));
+
+                await ref.read(invoiceRepositoryProvider).addItem(InvoiceItem(
+                      invoiceId: invoiceId,
+                      description: descCtrl.text,
+                      unitPrice: price,
+                      total: price,
+                      createdAt: now,
+                    ));
+
+                ref.invalidate(invoicesProvider);
+                ref.invalidate(dailyReportProvider(ClinicDateUtils.todayString()));
+
+                if (context.mounted) {
+                  showSnack(context, 'تم إصدار الفاتورة بنجاح');
+                  context.go('/invoices/$invoiceId');
+                }
+              } catch (e) {
+                if (context.mounted) showSnack(context, 'خطأ: $e', error: true);
+              }
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Future<void> _showQuickPaymentDialog(
+    BuildContext context, WidgetRef ref, Invoice inv, NumberFormat fmt) async {
+  final amtCtrl = TextEditingController(text: inv.remainingAmount.toStringAsFixed(2));
+  String method = 'cash';
+
+  await showDialog(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setSt) => AlertDialog(
+        title: Text('دفع سريع للفاتورة #${inv.id}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('المبلغ المتبقي: \$${fmt.format(inv.remainingAmount)}',
+                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.error)),
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(
+              label: 'مبلغ الدفع (\$)',
+              required: true,
+              controller: amtCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppDropdown<String>(
+              label: 'طريقة الدفع',
+              value: method,
+              items: const [
+                DropdownMenuItem(value: 'cash', child: Text('نقدي')),
+                DropdownMenuItem(value: 'card', child: Text('بطاقة')),
+                DropdownMenuItem(value: 'transfer', child: Text('تحويل')),
+              ],
+              onChanged: (v) => setSt(() => method = v ?? 'cash'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          PrimaryButton(
+            label: 'تأكيد الدفع',
+            onPressed: () async {
+              final amount = double.tryParse(amtCtrl.text);
+              if (amount == null || amount <= 0) return;
+
+              Navigator.pop(ctx);
+              try {
+                final now = DateTime.now();
+                await ref.read(invoiceRepositoryProvider).addPayment(Payment(
+                      invoiceId: inv.id!,
+                      amount: amount,
+                      paymentDate: ClinicDateUtils.todayString(),
+                      method: PaymentMethodX.fromString(method),
+                      createdAt: now,
+                    ));
+
+                ref.invalidate(invoicesProvider);
+                ref.invalidate(invoiceByIdProvider(inv.id!));
+                ref.invalidate(dailyReportProvider(ClinicDateUtils.todayString()));
+                ref.invalidate(cashBoxTodayProvider);
+
+                if (context.mounted) showSnack(context, 'تم تسجيل الدفعة بنجاح');
+              } catch (e) {
+                if (context.mounted) showSnack(context, 'خطأ: $e', error: true);
+              }
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+// ─── Helper Row Widgets ───────────────────────────────────────────────────────────
 
 class _InfoRow extends StatelessWidget {
   final String label;
@@ -487,10 +598,8 @@ class _InfoRow extends StatelessWidget {
           SizedBox(
               width: 100,
               child: Text(label,
-                  style: const TextStyle(
-                      color: AppColors.textHint, fontSize: 13))),
-          Text(value,
-              style: const TextStyle(fontWeight: FontWeight.w600)),
+                  style: const TextStyle(color: AppColors.textHint, fontSize: 13))),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
         ]),
       );
 }
@@ -510,16 +619,12 @@ class _TotalRow extends StatelessWidget {
             children: [
               Text(label,
                   style: TextStyle(
-                      color: bold
-                          ? AppColors.textPrimary
-                          : AppColors.textSecondary,
-                      fontWeight:
-                          bold ? FontWeight.w700 : FontWeight.w400)),
+                      color: bold ? AppColors.textPrimary : AppColors.textSecondary,
+                      fontWeight: bold ? FontWeight.w700 : FontWeight.w400)),
               Text(value,
                   style: TextStyle(
                       color: color ?? AppColors.textPrimary,
-                      fontWeight:
-                          bold ? FontWeight.w700 : FontWeight.w600)),
+                      fontWeight: bold ? FontWeight.w700 : FontWeight.w600)),
             ]),
       );
 }
@@ -528,8 +633,7 @@ class _PaymentTile extends StatelessWidget {
   final Payment payment;
   final NumberFormat fmt;
   final VoidCallback? onDelete;
-  const _PaymentTile(
-      {required this.payment, required this.fmt, this.onDelete});
+  const _PaymentTile({required this.payment, required this.fmt, this.onDelete});
 
   @override
   Widget build(BuildContext context) => Container(
@@ -540,10 +644,8 @@ class _PaymentTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-                color: AppColors.successSurface,
-                borderRadius: BorderRadius.circular(8)),
-            child: const Icon(Icons.payments_outlined,
-                color: AppColors.success, size: 18),
+                color: AppColors.successSurface, borderRadius: BorderRadius.circular(8)),
+            child: const Icon(Icons.payments_outlined, color: AppColors.success, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -551,12 +653,9 @@ class _PaymentTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(_money(fmt, payment.amount),
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.success)),
+                  style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.success)),
               Text('${payment.paymentDate} · ${payment.method.label}',
-                  style: const TextStyle(
-                      color: AppColors.textHint, fontSize: 12)),
+                  style: const TextStyle(color: AppColors.textHint, fontSize: 12)),
             ],
           )),
           if (onDelete != null)

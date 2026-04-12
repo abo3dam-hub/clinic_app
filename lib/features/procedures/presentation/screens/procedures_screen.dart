@@ -180,7 +180,7 @@ class _ProceduresScreenState extends ConsumerState<ProceduresScreen> {
 
     await showDialog(
       context: ctx,
-      builder: (_) => AlertDialog(
+      builder: (innerCtx) => AlertDialog(
         title: Text(existing == null ? 'إجراء جديد' : 'تعديل الإجراء'),
         content: SizedBox(
           width: 400,
@@ -214,12 +214,12 @@ class _ProceduresScreenState extends ConsumerState<ProceduresScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+              onPressed: () => Navigator.pop(innerCtx), child: const Text('إلغاء')),
           PrimaryButton(
             label: existing == null ? 'إضافة' : 'حفظ',
             onPressed: () async {
               if (!formKey.currentState!.validate()) return;
-              Navigator.pop(ctx);
+              Navigator.pop(innerCtx);
               final now = DateTime.now();
               final proc = Procedure(
                 id: existing?.id,
@@ -235,15 +235,15 @@ class _ProceduresScreenState extends ConsumerState<ProceduresScreen> {
                   await ref
                       .read(procedureNotifierProvider.notifier)
                       .create(proc);
-                  if (ctx.mounted) showSnack(ctx, 'تم إضافة الإجراء');
+                  if (context.mounted) showSnack(context, 'تم إضافة الإجراء');
                 } else {
                   await ref
                       .read(procedureNotifierProvider.notifier)
                       .updateProcedure(proc);
-                  if (ctx.mounted) showSnack(ctx, 'تم التحديث');
+                  if (context.mounted) showSnack(context, 'تم التحديث');
                 }
               } catch (e) {
-                if (ctx.mounted) showSnack(ctx, 'خطأ: $e', error: true);
+                if (context.mounted) showSnack(context, 'خطأ: $e', error: true);
               }
             },
           ),
