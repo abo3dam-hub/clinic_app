@@ -7,6 +7,11 @@ import '../../../../core/providers/service_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/patient.dart';
+import '../../../../features/invoices/domain/entities/invoice.dart';
+
+final patientInvoicesProvider = FutureProvider.family<List<Invoice>, int>((ref, patientId) async {
+  return ref.watch(invoiceRepositoryProvider).getAll(patientId: patientId);
+});
 
 class PatientFormScreen extends ConsumerStatefulWidget {
   final int? patientId;
@@ -127,9 +132,11 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 700),
-              child: AppCard(
-                padding: const EdgeInsets.all(AppSpacing.xl),
-                child: Form(
+              child: Column(
+                children: [
+                  AppCard(
+                    padding: const EdgeInsets.all(AppSpacing.xl),
+                    child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -231,11 +238,16 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
                   ),
                 ),
               ),
-            ),
+              if (_isEdit) ...[
+                const SizedBox(height: AppSpacing.lg),
+                _PatientFinancialSummaryCard(patientId: widget.patientId!),
+              ],
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
+  },
   }
 }
 
@@ -272,6 +284,93 @@ class _ResponsiveRow extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+// ─── Financial Summary Card ──────────────────────────────────────────────────
+class _PatientFinancialSummaryCard extends ConsumerWidget {
+  final int patientId;
+  const _PatientFinancialSummaryCard({required this.patientId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncInvoices = ref.watch(patientInvoicesProvider(patientId));
+    
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionHeader(title: 'السجل المالي للمريض'),
+          const SizedBox(height: AppSpacing.md),
+          asyncInvoices.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => ErrorView(message: 'خطأ: \$e'),
+            data: (invoices) {
+              if (invoices.isEmpty) {
+                return const Text('لا توجد فواتير مالية مسجلة لهذا المريض.', style: TextStyle(color: AppColors.textHint));
+              }
+
+              final totalNet = invoices.fold(0.0, (s, i) => s + i.netAmount);
+              final totalPaid = invoices.fold(0.0, (s, i) => s + i.paidAmount);
+              final totalRemaining = invoices.fold(0.0, (s, i) => s + i.remainingAmount);
+
+              return Column(
+                children: [
+                  Row(
+                    children: [
+                      _StatBox(title: 'الإجمالي المطلوب', value: totalNet, color: AppColors.primary),
+                      const SizedBox(width: AppSpacing.md),
+                      _StatBox(title: 'إجمالي المُحصَّل', value: totalPaid, color: AppColors.success),
+                      const SizedBox(width: AppSpacing.md),
+                      _StatBox(title: 'إجمالي المتبقي', value: totalRemaining, color: totalRemaining > 0 ? AppColors.error : AppColors.textHint),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: SecondaryButton(
+                      label: 'الذهاب للفواتير التفصيلية',
+                      icon: Icons.receipt_long,
+                      compact: true,
+                      onPressed: () => context.go('/invoices'), 
+                    ),
+                  )
+                ],
+              );
+            },
+          )
+        ],
+      ),
+    );
+  }
+}
+
+class _StatBox extends StatelessWidget {
+  final String title;
+  final double value;
+  final Color color;
+  const _StatBox({required this.title, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          children: [
+            Text(title, style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            const SizedBox(height: 4),
+            Text('\$${value.toStringAsFixed(2)}', style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
     );
   }
 }

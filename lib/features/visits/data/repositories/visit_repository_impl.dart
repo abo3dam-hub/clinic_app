@@ -155,16 +155,57 @@ class VisitRepositoryImpl {
 
   Future<int> addProcedure(VisitProcedureItem item) async {
     await _assertNotLocked(item.visitId);
-    final map = {
-      'visit_id': item.visitId,
-      'procedure_id': item.procedureId,
-      'quantity': item.quantity,
-      'unit_price': item.unitPrice,
-      'discount': item.discount,
-      'notes': item.notes,
-      'created_at': DateTime.now().toIso8601String(),
-    };
-    return _db.insert('visit_procedures', map);
+    
+    return _db.runTransaction<int>((txn) async {
+      final now = DateTime.now().toIso8601String();
+      final map = {
+        'visit_id': item.visitId,
+        'procedure_id': item.procedureId,
+        'quantity': item.quantity,
+        'unit_price': item.unitPrice,
+        'discount': item.discount,
+        'notes': item.notes,
+        'created_at': now,
+      };
+      final vpId = await txn.insert('visit_procedures', map);
+
+      // Inventory Deduction (ERP): Auto-consume materials
+      final materials = await txn.query('procedure_materials', 
+          where: 'procedure_id = ?', whereArgs: [item.procedureId]);
+      
+      for (final mat in materials) {
+        final invId = mat['inventory_id'] as int;
+        final qtyPerProc = (mat['quantity'] as num).toDouble();
+        final totalToConsume = qtyPerProc * item.quantity;
+        
+        final itemRows = await txn.query('items', where: 'id = ?', whereArgs: [invId], limit: 1);
+        if (itemRows.isNotEmpty) {
+          final currentQty = (itemRows.first['quantity'] as num).toDouble();
+          final newQty = currentQty - totalToConsume;
+          final unitCost = (itemRows.first['unit_cost'] as num).toDouble();
+          
+          if (newQty < 0) {
+            throw StateError('المخزون للصنف غير كافٍ. المتوفر \$currentQty والمطلوب \$totalToConsume');
+          }
+
+          await txn.insert('stock_movements', {
+            'item_id': invId,
+            'type': 'out',
+            'quantity': totalToConsume,
+            'unit_cost': unitCost,
+            'reference': 'VISIT-\${item.visitId}-PROC-\$vpId',
+            'notes': 'استهلاك تلقائي: \${item.procedureName ?? "إجراءات"}',
+            'movement_date': now.split('T')[0],
+            'created_at': now,
+          });
+
+          await txn.update('items', 
+            {'quantity': newQty, 'updated_at': now},
+            where: 'id = ?', whereArgs: [invId]);
+        }
+      }
+      return vpId;
+    });
   }
 
   /// FIX #7 – Added lock guard before deletion.
@@ -177,10 +218,47 @@ class VisitRepositoryImpl {
     if (rows.isEmpty) return;
 
     final visitId = rows.first['visit_id'] as int;
+    final procedureId = rows.first['procedure_id'] as int;
+    final quantityUsed = (rows.first['quantity'] as num).toDouble();
     // FIX #7: enforce the visit lock before any mutation.
     await _assertNotLocked(visitId);
 
-    await _db.delete('visit_procedures', where: 'id = ?', whereArgs: [id]);
+    await _db.runTransaction<void>((txn) async {
+      await txn.delete('visit_procedures', where: 'id = ?', whereArgs: [id]);
+
+      // Reverse Inventory Deduction
+      final now = DateTime.now().toIso8601String();
+      final materials = await txn.query('procedure_materials', 
+          where: 'procedure_id = ?', whereArgs: [procedureId]);
+      
+      for (final mat in materials) {
+        final invId = mat['inventory_id'] as int;
+        final qtyPerProc = (mat['quantity'] as num).toDouble();
+        final totalToReturn = qtyPerProc * quantityUsed;
+        
+        final itemRows = await txn.query('items', where: 'id = ?', whereArgs: [invId], limit: 1);
+        if (itemRows.isNotEmpty) {
+          final currentQty = (itemRows.first['quantity'] as num).toDouble();
+          final newQty = currentQty + totalToReturn;
+          final unitCost = (itemRows.first['unit_cost'] as num).toDouble();
+          
+          await txn.insert('stock_movements', {
+            'item_id': invId,
+            'type': 'in', // reversal
+            'quantity': totalToReturn,
+            'unit_cost': unitCost,
+            'reference': 'VISIT-\$visitId-PROC-\$id-DEL',
+            'notes': 'إلغاء إجراء: استرجاع تلقائي للمخزون',
+            'movement_date': now.split('T')[0],
+            'created_at': now,
+          });
+
+          await txn.update('items', 
+            {'quantity': newQty, 'updated_at': now},
+            where: 'id = ?', whereArgs: [invId]);
+        }
+      }
+    });
   }
 
   // ─── Helpers ─────────────────────────────────────────────────

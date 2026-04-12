@@ -279,6 +279,9 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                   }
                   ref.invalidate(_expensesProvider(_filter));
                   ref.invalidate(_categoriesProvider);
+                  final todayStr = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+                  ref.invalidate(dailyReportProvider(todayStr));
+                  ref.invalidate(cashBoxTodayProvider);
                 } catch (e) {
                   if (ctx.mounted) showSnack(ctx, 'خطأ: $e', error: true);
                 }
@@ -301,6 +304,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
       try {
         await ref.read(expenseRepositoryProvider).delete(expense.id!);
         ref.invalidate(_expensesProvider(_filter));
+        final now = DateTime.now();
+        final todayStr = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+        ref.invalidate(dailyReportProvider(todayStr));
+        ref.invalidate(cashBoxTodayProvider);
         if (ctx.mounted) showSnack(ctx, 'تم الحذف');
       } catch (e) {
         if (ctx.mounted) showSnack(ctx, 'خطأ: $e', error: true);

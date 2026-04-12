@@ -433,6 +433,9 @@ class InvoiceDetailScreen extends ConsumerWidget {
                       );
                   ref.invalidate(invoiceByIdProvider(inv.id!));
                   ref.invalidate(invoicePaymentsProvider(inv.id!));
+                  final todayStr = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+                  ref.invalidate(dailyReportProvider(todayStr));
+                  ref.invalidate(cashBoxTodayProvider);
                   if (context.mounted) showSnack(context, 'تم تسجيل الدفعة');
                 } catch (e) {
                   if (context.mounted)
@@ -458,6 +461,10 @@ class InvoiceDetailScreen extends ConsumerWidget {
         await ref.read(invoiceRepositoryProvider).deletePayment(paymentId);
         ref.invalidate(invoiceByIdProvider(invoiceId));
         ref.invalidate(invoicePaymentsProvider(invoiceId));
+        final now = DateTime.now();
+        final todayStr = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+        ref.invalidate(dailyReportProvider(todayStr));
+        ref.invalidate(cashBoxTodayProvider);
         if (context.mounted) showSnack(context, 'تم حذف الدفعة');
       } catch (e) {
         if (context.mounted) showSnack(context, 'خطأ: $e', error: true);

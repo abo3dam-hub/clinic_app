@@ -9,7 +9,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class DatabaseHelper {
   static const String _dbName = 'clinic.db';
-  static const int _dbVersion = 2; // bumped: v1→v2 adds accounting tables
+  static const int _dbVersion = 3; // bumped: v2→v3 adds procedure_materials
 
   DatabaseHelper._internal();
   static final DatabaseHelper instance = DatabaseHelper._internal();
@@ -88,6 +88,21 @@ class DatabaseHelper {
       await _seedChartOfAccounts(db);
       debugPrint('[DB] Migration v1→v2 complete');
     }
+    if (oldVersion < 3) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS procedure_materials (
+          id            INTEGER PRIMARY KEY AUTOINCREMENT,
+          procedure_id  INTEGER NOT NULL,
+          inventory_id  INTEGER NOT NULL,
+          quantity      REAL NOT NULL DEFAULT 1.0,
+          created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+          FOREIGN KEY (procedure_id) REFERENCES procedures(id) ON DELETE CASCADE,
+          FOREIGN KEY (inventory_id) REFERENCES inventory(id) ON DELETE RESTRICT
+        )
+      ''');
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_proc_mat_proc  ON procedure_materials(procedure_id)');
+      debugPrint('[DB] Migration v2→v3 complete (procedure_materials)');
+    }
   }
 
   // ─── Schema ──────────────────────────────────────────────────
@@ -145,6 +160,20 @@ class DatabaseHelper {
           updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
         )
         ''',
+
+        // ── PROCEDURE_MATERIALS ──
+        '''
+        CREATE TABLE IF NOT EXISTS procedure_materials (
+          id            INTEGER PRIMARY KEY AUTOINCREMENT,
+          procedure_id  INTEGER NOT NULL,
+          inventory_id  INTEGER NOT NULL,
+          quantity      REAL NOT NULL DEFAULT 1.0,
+          created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+          FOREIGN KEY (procedure_id) REFERENCES procedures(id) ON DELETE CASCADE,
+          FOREIGN KEY (inventory_id) REFERENCES inventory(id) ON DELETE RESTRICT
+        )
+        ''',
+        'CREATE INDEX IF NOT EXISTS idx_proc_mat_proc  ON procedure_materials(procedure_id)',
 
         // ── APPOINTMENTS ──
         '''

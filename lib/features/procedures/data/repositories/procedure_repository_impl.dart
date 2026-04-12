@@ -58,6 +58,33 @@ class ProcedureRepositoryImpl {
     return rows.isEmpty ? null : _fromMap(rows.first);
   }
 
+  // ─── Procedure Materials (Inventory Integration) ──────────────
+
+  Future<List<Map<String, dynamic>>> getProcedureMaterials(int procedureId) async {
+    final rows = await _db.rawQuery('''
+      SELECT pm.*, i.name AS item_name, i.unit_cost
+      FROM   procedure_materials pm
+      JOIN   items i ON i.id = pm.inventory_id
+      WHERE  pm.procedure_id = ?
+    ''', [procedureId]);
+    return rows;
+  }
+
+  Future<void> saveProcedureMaterials(int procedureId, List<Map<String, dynamic>> materials) async {
+    await _db.runTransaction<void>((txn) async {
+      await txn.delete('procedure_materials', where: 'procedure_id = ?', whereArgs: [procedureId]);
+      
+      for (final m in materials) {
+        await txn.insert('procedure_materials', {
+          'procedure_id': procedureId,
+          'inventory_id': m['inventory_id'],
+          'quantity': m['quantity'] ?? 1.0,
+          'created_at': DateTime.now().toIso8601String(),
+        });
+      }
+    });
+  }
+
   // ─── Write ────────────────────────────────────────────────────
 
   Future<int> create(Procedure procedure) async {

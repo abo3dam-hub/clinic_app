@@ -212,6 +212,10 @@ class _VisitFormScreenState extends ConsumerState<VisitFormScreen> {
         if (mounted) showSnack(context, 'تم إضافة الزيارة');
       }
       ref.invalidate(visitsProvider);
+      
+      final todayStr = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      ref.invalidate(dailyReportProvider(todayStr));
+      
       if (mounted) context.go('/visits');
     } catch (e) {
       if (mounted) showSnack(context, 'خطأ: $e', error: true);
