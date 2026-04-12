@@ -49,7 +49,11 @@ class DashboardScreen extends ConsumerWidget {
                 if (isWide) {
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: children.map((w) => Expanded(child: w)).toList(),
+                    children: [
+                      Expanded(child: children[0]),
+                      const SizedBox(width: AppSpacing.lg),
+                      Expanded(child: children[1]),
+                    ],
                   );
                 }
                 return Column(
@@ -64,6 +68,7 @@ class DashboardScreen extends ConsumerWidget {
               return rowOrCol([
                 // 1. Appointments & Inventory
                 Column(
+                  mainAxisSize: MainAxisSize.min, // Added
                   crossAxisAlignment: crossAxis,
                   children: [
                     _AppointmentsCard(apptCounts: apptCounts),
@@ -71,20 +76,20 @@ class DashboardScreen extends ConsumerWidget {
                     _LowStockCard(lowStockAsync: lowStock),
                   ],
                 ),
-                if (isWide) const SizedBox(width: AppSpacing.lg),
 
                 // 2. Cash Box & Doctors
                 Column(
+                  mainAxisSize: MainAxisSize.min, // Added
                   crossAxisAlignment: crossAxis,
                   children: [
                     daily.when(
-                      loading: () => const SizedBox.shrink(),
+                      loading: () => const SizedBox(height: 100, child: LoadingView()),
                       error: (_,__) => const SizedBox.shrink(),
                       data: (report) => _CashBoxCard(cashBoxAsync: cashBox, report: report),
                     ),
                     const SizedBox(height: AppSpacing.md),
                     daily.when(
-                      loading: () => const SizedBox.shrink(),
+                      loading: () => const SizedBox(height: 100, child: LoadingView()),
                       error: (_,__) => const SizedBox.shrink(),
                       data: (report) => _DoctorStatsCard(report: report),
                     ),
@@ -93,7 +98,7 @@ class DashboardScreen extends ConsumerWidget {
               ]).animate().fadeIn(duration: 600.ms, delay: 200.ms).slideY(begin: 0.05);
             },
           ),
-          const SizedBox(height: AppSpacing.xxl),
+          const SizedBox(height: AppSpacing.lg),
         ],
       ),
     );
@@ -198,10 +203,10 @@ class _StatsGrid extends StatelessWidget {
               gradient: const [Color(0xFF8b5cf6), Color(0xFF7c3aed)],
             ),
             _ModernStatCard(
-              title: 'صافي الخزينة',
+              title: 'صافي الصندوق',
               value: '${fmt.format(report.netCash)} \$',
               subtitle: 'بعد الخصم والمصروفات',
-              icon: Icons.savings,
+              icon: Icons.inventory_2,
               gradient: report.netCash >= 0 ? const [Color(0xFFf59e0b), Color(0xFFd97706)] : const [Color(0xFFef4444), Color(0xFFdc2626)],
             ),
           ],
@@ -484,7 +489,7 @@ class _CashBoxCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionHeader(title: 'حركة الخزينة التفصيلية'),
+          const SectionHeader(title: 'حركة الصندوق التفصيلية'),
           const SizedBox(height: AppSpacing.md),
           cashBoxAsync.when(
             loading: () => const LoadingView(),
@@ -499,7 +504,7 @@ class _CashBoxCard extends StatelessWidget {
                 if (box.isClosed)
                   Padding(
                     padding: const EdgeInsets.only(top: 12),
-                    child: StatusChip(label: 'تم إغلاق الخزينة', color: AppColors.textHint),
+                    child: StatusChip(label: 'تم إغلاق الصندوق', color: AppColors.textHint),
                   ),
               ],
             ),

@@ -214,7 +214,7 @@ class _ItemsTab extends ConsumerWidget {
 
     await showDialog(
       context: ctx,
-      builder: (_) => AlertDialog(
+      builder: (dialogCtx) => AlertDialog(
         title: Text(item == null ? 'صنف جديد' : 'تعديل الصنف'),
         content: SizedBox(
           width: 380,
@@ -256,12 +256,12 @@ class _ItemsTab extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+              onPressed: () => Navigator.pop(dialogCtx), child: const Text('إلغاء')),
           PrimaryButton(
             label: item == null ? 'إضافة' : 'حفظ',
             onPressed: () async {
               if (!formKey.currentState!.validate()) return;
-              Navigator.pop(ctx);
+              Navigator.pop(dialogCtx);
               final now = DateTime.now();
               final newItem = InventoryItem(
                 id: item?.id,
@@ -311,8 +311,8 @@ class _ItemsTab extends ConsumerWidget {
 
     await showDialog(
       context: ctx,
-      builder: (_) => StatefulBuilder(
-        builder: (_, setSt) => AlertDialog(
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (stCtx, setSt) => AlertDialog(
           title: Text('حركة مخزون — ${item.name}'),
           content: SizedBox(
             width: 360,
@@ -345,7 +345,7 @@ class _ItemsTab extends ConsumerWidget {
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx),
+                onPressed: () => Navigator.pop(dialogCtx),
                 child: const Text('إلغاء')),
             PrimaryButton(
               label: 'تأكيد',
@@ -355,7 +355,7 @@ class _ItemsTab extends ConsumerWidget {
                   showSnack(ctx, 'أدخل كمية صحيحة', error: true);
                   return;
                 }
-                Navigator.pop(ctx);
+                Navigator.pop(dialogCtx);
                 final now = DateTime.now();
                 final movement = StockMovement(
                   itemId: item.id!,

@@ -5,19 +5,17 @@
 //   2. Income Statement (Profit & Loss)
 //   3. Balance Sheet
 
+import 'dart:typed_data';
 import 'package:clinic_app/core/providers/repository_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:intl/intl.dart';
-import 'package:riverpod/src/framework.dart';
-import '../../../accounting/data/repositories/ledger_repository.dart';
-import '../../../accounting/domain/services/journal_service.dart';
+import '../../data/repositories/ledger_repository.dart';
+import '../domain/services/journal_service.dart';
 import '../../../../core/providers/service_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../../../shared/widgets/app_widgets.dart';
-import '../../data/repositories/ledger_repository.dart';
 
 // ─── Providers ────────────────────────────────────────────────────────────────
 
@@ -109,6 +107,25 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen>
           ),
         ),
         const SizedBox(height: AppSpacing.md),
+        
+        // ── Export Toolbar ───────────────────────────────────────
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            SecondaryButton(
+              label: 'تصدير PDF',
+              icon: Icons.picture_as_pdf_outlined,
+              onPressed: () => _handleExport(context, ref, isPdf: true),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            SecondaryButton(
+              label: 'تصدير Excel',
+              icon: Icons.table_view_outlined,
+              onPressed: () => _handleExport(context, ref, isPdf: false),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.sm),
 
         // ── Tab bodies ───────────────────────────────────────────
         Expanded(

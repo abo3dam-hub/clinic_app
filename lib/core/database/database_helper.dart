@@ -431,7 +431,7 @@ class DatabaseHelper {
   Future<void> _seedChartOfAccounts(Database db) async {
     const accounts = [
       // (code, name, type, sort_order)
-      ('1100', 'الخزينة (نقدية)',             'asset',      10),
+      ('1100', 'الصندوق (نقدية)',             'asset',      10),
       ('1200', 'حسابات العملاء (مدينون)',     'asset',      20),
       ('1300', 'مخزون لوازم طبية',            'asset',      30),
       ('2100', 'حسابات الموردين (دائنون)',    'liability',  40),

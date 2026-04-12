@@ -16,8 +16,8 @@ class CashBoxService {
   /// closing balance = opening + income - expenses (auto-calculated).
   Future<void> closeToday() async {
     final today = await _cashBoxRepo.getByDate(ClinicDateUtils.todayString());
-    if (today == null) throw StateError('الخزينة غير مفتوحة اليوم');
-    if (today.isClosed) throw StateError('الخزينة مغلقة مسبقاً');
+    if (today == null) throw StateError('الصندوق غير مفتوحة اليوم');
+    if (today.isClosed) throw StateError('الصندوق مغلقة مسبقاً');
 
     final closing = today.calculatedClosingBalance;
     await _cashBoxRepo.close(today.id!, closing);

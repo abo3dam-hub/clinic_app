@@ -254,7 +254,7 @@ class _CloseBoxButton extends StatelessWidget {
         onPressed: () => _confirmClose(context),
         icon: const Icon(Icons.lock_outline),
         label: Text(
-            'إغلاق الخزينة بمبلغ ${fmt.format(box.calculatedClosingBalance)} USD'),
+            'إغلاق الصندوق بمبلغ ${fmt.format(box.calculatedClosingBalance)} USD'),
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
@@ -264,7 +264,7 @@ class _CloseBoxButton extends StatelessWidget {
 
   Future<void> _confirmClose(BuildContext ctx) async {
     final ok = await ConfirmDialog.show(ctx,
-        title: 'إغلاق الخزينة',
+        title: 'إغلاق الصندوق',
         message: 'سيتم إغلاق خزينة اليوم بالرصيد الختامي '
             '${fmt.format(box.calculatedClosingBalance)} USD. هل تريد المتابعة؟',
         confirmLabel: 'إغلاق');
@@ -272,7 +272,7 @@ class _CloseBoxButton extends StatelessWidget {
       try {
         await ref.read(cashBoxServiceProvider).closeToday();
         ref.invalidate(cashBoxTodayProvider);
-        if (ctx.mounted) showSnack(ctx, 'تم إغلاق الخزينة');
+        if (ctx.mounted) showSnack(ctx, 'تم إغلاق الصندوق');
       } catch (e) {
         if (ctx.mounted) showSnack(ctx, 'خطأ: $e', error: true);
       }
@@ -297,7 +297,7 @@ class _ClosedBanner extends StatelessWidget {
           const Icon(Icons.lock, color: AppColors.primary, size: 24),
           const SizedBox(width: AppSpacing.md),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('الخزينة مغلقة',
+            const Text('الصندوق مغلقة',
                 style: TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w700,

@@ -65,7 +65,7 @@ const _navItems = [
       activeIcon: Icons.inventory_2,
       route: '/inventory'),
   _NavItem(
-      label: 'الخزينة',
+      label: 'الصندوق',
       icon: Icons.account_balance_wallet_outlined,
       activeIcon: Icons.account_balance_wallet,
       route: '/cash-box'),

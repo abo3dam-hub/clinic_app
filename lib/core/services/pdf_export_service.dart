@@ -14,6 +14,7 @@ import 'package:printing/printing.dart';
 import '../../features/invoices/domain/entities/invoice.dart';
 import '../../features/reports/domain/services/report_service.dart';
 import '../../features/doctors/domain/services/doctor_revenue_service.dart';
+import '../../features/accounting/data/repositories/ledger_repository.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // Shared helpers
@@ -389,7 +390,7 @@ class PdfExportService {
                   _statBox('المصروفات', _Pdf.fmt(report.totalExpenses),
                       _Pdf.errorClr),
                   pw.SizedBox(width: 8),
-                  _statBox('صافي الخزينة', _Pdf.fmt(report.netCash),
+                  _statBox('صافي الصندوق', _Pdf.fmt(report.netCash),
                       report.netCash >= 0 ? _Pdf.secondary : _Pdf.errorClr),
                 ]),
 
@@ -638,6 +639,164 @@ class PdfExportService {
     return doc.save();
   }
 
+  // ─── Trial Balance PDF ────────────────────────────────────────
+
+  Future<Uint8List> generateTrialBalancePdf({
+    required List<LedgerBalance> balances,
+    required String fromDate,
+    required String toDate,
+  }) async {
+    await _Pdf.loadFonts();
+    final doc = pw.Document(
+      theme: pw.ThemeData.withFont(base: _Pdf._cairo!, bold: _Pdf._cairoBold!),
+    );
+
+    final totalDr = balances.fold(0.0, (s, b) => s + b.totalDebit);
+    final totalCr = balances.fold(0.0, (s, b) => s + b.totalCredit);
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        textDirection: pw.TextDirection.rtl,
+        margin: pw.EdgeInsets.zero,
+        header: (ctx) => _Pdf.header(clinicName, 'ميزان المراجعة', '$fromDate — $toDate'),
+        footer: (ctx) => _Pdf.footer(ctx.pageNumber, ctx.pagesCount),
+        build: (ctx) => [
+          pw.Padding(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 24),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.SizedBox(height: 16),
+                pw.Table(
+                  border: pw.TableBorder.all(color: _Pdf.border, width: 0.5),
+                  children: [
+                    _Pdf.tableHeaderRow(['الكود', 'الحساب', 'النوع', 'مدين', 'دائن']),
+                    ...balances.asMap().entries.map((e) {
+                      final b = e.value;
+                      return _Pdf.tableDataRow([
+                        b.account.code,
+                        b.account.name,
+                        _accountTypeLabel(b.account.type),
+                        _Pdf.fmt(b.totalDebit),
+                        _Pdf.fmt(b.totalCredit),
+                      ], even: e.key.isEven);
+                    }),
+                    // Totals Row
+                    _Pdf.tableDataRow([
+                      '',
+                      'الإجمالي',
+                      '',
+                      _Pdf.fmt(totalDr),
+                      _Pdf.fmt(totalCr),
+                    ], even: false, cellColors: [null, _Pdf.textDark, null, _Pdf.primary, _Pdf.secondary]),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    return doc.save();
+  }
+
+  // ─── Income Statement PDF ─────────────────────────────────────
+
+  Future<Uint8List> generateIncomeStatementPdf(IncomeStatement pl) async {
+    await _Pdf.loadFonts();
+    final doc = pw.Document(
+      theme: pw.ThemeData.withFont(base: _Pdf._cairo!, bold: _Pdf._cairoBold!),
+    );
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        textDirection: pw.TextDirection.rtl,
+        margin: pw.EdgeInsets.zero,
+        header: (ctx) => _Pdf.header(clinicName, 'قائمة الدخل', '${pl.fromDate} — ${pl.toDate}'),
+        footer: (ctx) => _Pdf.footer(ctx.pageNumber, ctx.pagesCount),
+        build: (ctx) => [
+          pw.Padding(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 24),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.SizedBox(height: 16),
+                _Pdf.sectionTitle('الإيرادات'),
+                _Pdf.summaryCard(pl.revenueLines.map((l) => _SumRow(l.accountName, _Pdf.fmt(l.amount))).toList()),
+                pw.SizedBox(height: 8),
+                _Pdf.summaryCard([_SumRow('إجمالي الإيرادات', _Pdf.fmt(pl.totalRevenue), bold: true, color: _Pdf.secondary)]),
+                
+                _Pdf.sectionTitle('المصروفات'),
+                _Pdf.summaryCard(pl.expenseLines.map((l) => _SumRow(l.accountName, _Pdf.fmt(l.amount))).toList()),
+                pw.SizedBox(height: 8),
+                _Pdf.summaryCard([_SumRow('إجمالي المصروفات', _Pdf.fmt(pl.totalExpenses), bold: true, color: _Pdf.errorClr)]),
+                
+                pw.SizedBox(height: 24),
+                _Pdf.summaryCard([
+                  _SumRow(pl.netIncome >= 0 ? 'صافي الربح' : 'صافي الخسارة', _Pdf.fmt(pl.netIncome.abs()), 
+                    bold: true, color: pl.netIncome >= 0 ? _Pdf.secondary : _Pdf.errorClr)
+                ]),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    return doc.save();
+  }
+
+  // ─── Balance Sheet PDF ────────────────────────────────────────
+
+  Future<Uint8List> generateBalanceSheetPdf(BalanceSheet bs) async {
+    await _Pdf.loadFonts();
+    final doc = pw.Document(
+      theme: pw.ThemeData.withFont(base: _Pdf._cairo!, bold: _Pdf._cairoBold!),
+    );
+
+    doc.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        textDirection: pw.TextDirection.rtl,
+        margin: pw.EdgeInsets.zero,
+        header: (ctx) => _Pdf.header(clinicName, 'الميزانية العمومية', 'كما في تاريخ ${bs.asOfDate}'),
+        footer: (ctx) => _Pdf.footer(ctx.pageNumber, ctx.pagesCount),
+        build: (ctx) => [
+          pw.Padding(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 24),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.SizedBox(height: 16),
+                _Pdf.sectionTitle('الأصول'),
+                _Pdf.summaryCard(bs.assetLines.map((l) => _SumRow(l.accountName, _Pdf.fmt(l.amount))).toList()),
+                pw.SizedBox(height: 4),
+                _Pdf.summaryCard([_SumRow('إجمالي الأصول', _Pdf.fmt(bs.totalAssets), bold: true, color: _Pdf.primary)]),
+
+                _Pdf.sectionTitle('الالتزامات وحقوق الملكية'),
+                _Pdf.summaryCard([
+                  ...bs.liabilityLines.map((l) => _SumRow(l.accountName, _Pdf.fmt(l.amount))),
+                  ...bs.equityLines.map((l) => _SumRow(l.accountName, _Pdf.fmt(l.amount))),
+                  _SumRow('صافي دخل الفترة', _Pdf.fmt(bs.netIncome), color: bs.netIncome >= 0 ? _Pdf.secondary : _Pdf.errorClr),
+                ]),
+                pw.SizedBox(height: 4),
+                _Pdf.summaryCard([_SumRow('إجمالي الالتزامات وحقوق الملكية', _Pdf.fmt(bs.totalLiabilities + bs.totalEquity), bold: true, color: _Pdf.primary)]),
+
+                pw.SizedBox(height: 32),
+                pw.Center(
+                  child: pw.Text(bs.isBalanced ? 'الميزانية متوازنة ✓' : 'تنبيه: الميزانية غير متوازنة ✗',
+                    style: _Pdf.style(size: 12, bold: true, color: bs.isBalanced ? _Pdf.secondary : _Pdf.errorClr)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    return doc.save();
+  }
+
   // ─── Save to file ─────────────────────────────────────────────
 
   Future<String> saveToFile(
@@ -719,5 +878,13 @@ class PdfExportService {
         'unpaid' => _Pdf.errorClr,
         'cancelled' => _Pdf.textGrey,
         _ => _Pdf.textGrey,
+      };
+
+  String _accountTypeLabel(AccountType type) => switch (type) {
+        AccountType.asset => 'أصل',
+        AccountType.liability => 'التزام',
+        AccountType.equity => 'ملكية',
+        AccountType.revenue => 'إيراد',
+        AccountType.expense => 'مصروف',
       };
 }

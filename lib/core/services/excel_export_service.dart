@@ -12,6 +12,7 @@ import '../../features/invoices/domain/entities/invoice.dart';
 import '../../features/patients/domain/entities/patient.dart';
 import '../../features/reports/domain/services/report_service.dart';
 import '../../features/doctors/domain/services/doctor_revenue_service.dart';
+import '../../features/accounting/data/repositories/ledger_repository.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // Shared styling helpers
@@ -300,7 +301,7 @@ class ExcelExportService {
       ('إجمالي الفواتير', '${_XL.fmt(report.totalInvoiced)} USD'),
       ('المحصّل', '${_XL.fmt(report.totalCollected)} USD'),
       ('المصروفات', '${_XL.fmt(report.totalExpenses)} USD'),
-      ('صافي الخزينة', '${_XL.fmt(report.netCash)} USD'),
+      ('صافي الصندوق', '${_XL.fmt(report.netCash)} USD'),
     ];
 
     for (final r in summaryRows) {
@@ -496,6 +497,119 @@ class ExcelExportService {
           ],
           even: i.isEven);
     }
+
+    return Uint8List.fromList(excel.encode()!);
+  }
+
+  // ─── Trial Balance Excel ──────────────────────────────────────
+
+  Future<Uint8List> generateTrialBalanceExcel({
+    required List<LedgerBalance> balances,
+    required String fromDate,
+    required String toDate,
+  }) async {
+    final excel = Excel.createExcel();
+    final sheet = excel['ميزان المراجعة'];
+    excel.setDefaultSheet('ميزان المراجعة');
+
+    _XL.setTitle(sheet, 0, '$clinicName — ميزان المراجعة', 4);
+    _XL.setInfoRow(sheet, 1, 'الفترة من', fromDate);
+    _XL.setInfoRow(sheet, 2, 'الفترة إلى', toDate);
+
+    _XL.writeHeaders(sheet, 4, ['الكود', 'الحساب', 'مدين', 'دائن'], widths: [12, 30, 18, 18]);
+
+    double totalDr = 0, totalCr = 0;
+    for (int i = 0; i < balances.length; i++) {
+      final b = balances[i];
+      totalDr += b.totalDebit;
+      totalCr += b.totalCredit;
+
+      _XL.writeRow(sheet, 5 + i, [
+        TextCellValue(b.account.code),
+        TextCellValue(b.account.name),
+        TextCellValue('${_XL.fmt(b.totalDebit)} USD'),
+        TextCellValue('${_XL.fmt(b.totalCredit)} USD'),
+      ], even: i.isEven);
+    }
+
+    final totRow = 5 + balances.length + 1;
+    _XL.setTotalRow(sheet, totRow, 'الإجمالي', totalDr, bold: true);
+    sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: totRow + 1))
+      ..value = TextCellValue('${_XL.fmt(totalCr)} USD')
+      ..cellStyle = _XL.moneyStyle;
+
+    return Uint8List.fromList(excel.encode()!);
+  }
+
+  // ─── Income Statement Excel ───────────────────────────────────
+
+  Future<Uint8List> generateIncomeStatementExcel(IncomeStatement pl) async {
+    final excel = Excel.createExcel();
+    final sheet = excel['قائمة الدخل'];
+    excel.setDefaultSheet('قائمة الدخل');
+
+    _XL.setTitle(sheet, 0, '$clinicName — قائمة الدخل', 1);
+    _XL.setInfoRow(sheet, 1, 'الفترة من', pl.fromDate);
+    _XL.setInfoRow(sheet, 2, 'الفترة إلى', pl.toDate);
+
+    int row = 4;
+    _XL.writeHeaders(sheet, row, ['الإيرادات', 'المبلغ'], widths: [30, 20]);
+    row++;
+    for (final l in pl.revenueLines) {
+      _XL.writeRow(sheet, row, [TextCellValue(l.accountName), TextCellValue('${_XL.fmt(l.amount)} USD')]);
+      row++;
+    }
+    _XL.setTotalRow(sheet, row, 'إجمالي الإيرادات', pl.totalRevenue, bold: true);
+    row += 2;
+
+    _XL.writeHeaders(sheet, row, ['المصروفات', 'المبلغ'], widths: [30, 20]);
+    row++;
+    for (final l in pl.expenseLines) {
+      _XL.writeRow(sheet, row, [TextCellValue(l.accountName), TextCellValue('${_XL.fmt(l.amount)} USD')]);
+      row++;
+    }
+    _XL.setTotalRow(sheet, row, 'إجمالي المصروفات', pl.totalExpenses, bold: true, isError: true);
+    row += 2;
+
+    _XL.setTotalRow(sheet, row, pl.netIncome >= 0 ? 'صافي الربح' : 'صافي الخسارة', pl.netIncome.abs(), 
+      bold: true, isError: pl.netIncome < 0);
+
+    return Uint8List.fromList(excel.encode()!);
+  }
+
+  // ─── Balance Sheet Excel ──────────────────────────────────────
+
+  Future<Uint8List> generateBalanceSheetExcel(BalanceSheet bs) async {
+    final excel = Excel.createExcel();
+    final sheet = excel['الميزانية العمومية'];
+    excel.setDefaultSheet('الميزانية العمومية');
+
+    _XL.setTitle(sheet, 0, '$clinicName — الميزانية العمومية', 1);
+    _XL.setInfoRow(sheet, 1, 'تاريخ التقرير', bs.asOfDate);
+
+    int row = 3;
+    _XL.writeHeaders(sheet, row, ['الأصول', 'المبلغ'], widths: [30, 20]);
+    row++;
+    for (final l in bs.assetLines) {
+      _XL.writeRow(sheet, row, [TextCellValue(l.accountName), TextCellValue('${_XL.fmt(l.amount)} USD')]);
+      row++;
+    }
+    _XL.setTotalRow(sheet, row, 'إجمالي الأصول', bs.totalAssets, bold: true);
+    row += 2;
+
+    _XL.writeHeaders(sheet, row, ['الالتزامات وحقوق الملكية', 'المبلغ'], widths: [30, 20]);
+    row++;
+    for (final l in bs.liabilityLines) {
+      _XL.writeRow(sheet, row, [TextCellValue(l.accountName), TextCellValue('${_XL.fmt(l.amount)} USD')]);
+      row++;
+    }
+    for (final l in bs.equityLines) {
+      _XL.writeRow(sheet, row, [TextCellValue(l.accountName), TextCellValue('${_XL.fmt(l.amount)} USD')]);
+      row++;
+    }
+    _XL.setTotalRow(sheet, row, 'صافي دخل الفترة', bs.netIncome);
+    row++;
+    _XL.setTotalRow(sheet, row, 'إجمالي الالتزامات وحقوق الملكية', bs.totalLiabilities + bs.totalEquity, bold: true);
 
     return Uint8List.fromList(excel.encode()!);
   }
