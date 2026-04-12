@@ -23,6 +23,9 @@ import '../../../../core/utils/date_utils.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/visit.dart';
 import '../../../invoices/domain/entities/invoice.dart';
+import '../../../inventory/domain/entities/inventory_item.dart';
+import '../../../procedures/domain/entities/procedure.dart';
+import '../../../procedures/domain/services/procedure_service.dart';
 
 // ─── Provider for a single visit ─────────────────────────────────────────────
 final visitByIdProvider = FutureProvider.family<Visit?, int>(
@@ -362,7 +365,7 @@ class _ProceduresCard extends ConsumerWidget {
                           final newId =
                               await _showQuickAddProcedureDialog(context, ref);
                           if (newId != null) {
-                            ref.invalidate(proceduresProvider);
+                            ref.invalidate(procedureNotifierProvider);
                             if (context.mounted) Navigator.pop(ctx);
                             _showAddProcedureDialog(context, ref);
                           }
@@ -438,7 +441,7 @@ class _ProceduresCard extends ConsumerWidget {
                                     color: AppColors.error, size: 20),
                                 onPressed: () =>
                                     setSt(() => selectedConsumables.removeAt(idx)),
-                                compact: true,
+                                visualDensity: VisualDensity.compact,
                               ),
                             ],
                           ),
@@ -507,8 +510,8 @@ class _ProceduresCard extends ConsumerWidget {
                 label: 'المادة',
                 value: selectedId,
                 items: items
-                    .map((i) => DropdownMenuItem(
-                        value: i.id, child: Text('${i.name} (المتوفر: ${i.quantity})')))
+                    .map<DropdownMenuItem<int>>((i) => DropdownMenuItem<int>(
+                        value: i.id!, child: Text('${i.name} (المتوفر: ${i.quantity})')))
                     .toList(),
                 onChanged: (v) => setSt(() => selectedId = v),
               ),

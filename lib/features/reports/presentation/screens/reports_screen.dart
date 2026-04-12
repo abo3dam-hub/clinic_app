@@ -7,6 +7,7 @@ import '../../../../core/providers/service_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../../../shared/widgets/app_widgets.dart';
+import '../../../../shared/widgets/export_button.dart';
 import '../../domain/services/report_service.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
@@ -417,6 +418,9 @@ class _DoctorPerfTab extends ConsumerWidget {
                         ])
                     .toList(),
               ),
+            ),
+          ],
+        ),
       ),
     );
   }
