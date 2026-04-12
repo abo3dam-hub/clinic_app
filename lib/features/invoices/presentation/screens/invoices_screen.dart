@@ -210,7 +210,7 @@ class _DateFilter extends StatelessWidget {
           locale: const Locale('ar'),
         );
         if (picked != null) {
-          onChanged(ClinicDateUtils.formatDate(picked));
+          onChanged(ClinicDateUtils.toDbDate(picked));
         }
       },
     );
