@@ -299,6 +299,7 @@ class _ProceduresCard extends ConsumerWidget {
       orElse: () => [],
     );
     final activeProcedures = allProcedures.where((p) => p.isActive).toList();
+    final allItems = ref.read(inventoryItemsProvider).asData?.value ?? [];
 
     if (activeProcedures.isEmpty) {
       showSnack(context, 'لا توجد إجراءات متاحة. أضف إجراءات أولاً.',
@@ -310,6 +311,8 @@ class _ProceduresCard extends ConsumerWidget {
     double price = 0;
     int quantity = 1;
     double discount = 0;
+    final List<VisitConsumable> selectedConsumables = [];
+
     final priceCtrl = TextEditingController();
     final qtyCtrl = TextEditingController(text: '1');
     final discCtrl = TextEditingController(text: '0');
@@ -320,63 +323,140 @@ class _ProceduresCard extends ConsumerWidget {
         builder: (ctx, setSt) => AlertDialog(
           title: const Text('إضافة إجراء طبي'),
           content: SizedBox(
-            width: 420,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppDropdown<int>(
-                  label: 'الإجراء',
-                  required: true,
-                  value: selectedProcedureId,
-                  items: activeProcedures
-                      .map((p) => DropdownMenuItem<int>(
-                            value: p.id!,
-                            child: Text(
-                                '${p.name}  —  \$${p.defaultPrice.toStringAsFixed(2)}'),
-                          ))
-                      .toList(),
-                  onChanged: (v) {
-                    setSt(() {
-                      selectedProcedureId = v;
-                      if (v != null) {
-                        final proc =
-                            activeProcedures.firstWhere((p) => p.id == v);
-                        price = proc.defaultPrice;
-                        priceCtrl.text = price.toStringAsFixed(2);
-                      }
-                    });
-                  },
-                ),
-                const SizedBox(height: 12),
-                Row(children: [
-                  Expanded(
-                    child: AppTextField(
-                      label: 'الكمية',
-                      controller: qtyCtrl,
-                      keyboardType: TextInputType.number,
-                      onChanged: (v) => quantity = int.tryParse(v) ?? 1,
-                    ),
+            width: 500,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: AppDropdown<int>(
+                          label: 'الإجراء',
+                          required: true,
+                          value: selectedProcedureId,
+                          items: activeProcedures
+                              .map((p) => DropdownMenuItem<int>(
+                                    value: p.id!,
+                                    child: Text(
+                                        '${p.name}  —  \$${p.defaultPrice.toStringAsFixed(2)}'),
+                                  ))
+                              .toList(),
+                          onChanged: (v) {
+                            setSt(() {
+                              selectedProcedureId = v;
+                              if (v != null) {
+                                final proc = activeProcedures
+                                    .firstWhere((p) => p.id == v);
+                                price = proc.defaultPrice;
+                                priceCtrl.text = price.toStringAsFixed(2);
+                              }
+                            });
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: () async {
+                          final newId =
+                              await _showQuickAddProcedureDialog(context, ref);
+                          if (newId != null) {
+                            ref.invalidate(proceduresProvider);
+                            if (context.mounted) Navigator.pop(ctx);
+                            _showAddProcedureDialog(context, ref);
+                          }
+                        },
+                        tooltip: 'إضافة إجراء جديد للنظام',
+                        icon: const Icon(Icons.add_box, color: AppColors.primary),
+                        padding: const EdgeInsets.only(bottom: 8),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: AppTextField(
-                      label: 'السعر (\$)',
-                      controller: priceCtrl,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      onChanged: (v) => price = double.tryParse(v) ?? 0,
+                  const SizedBox(height: 12),
+                  Row(children: [
+                    Expanded(
+                      child: AppTextField(
+                        label: 'الكمية',
+                        controller: qtyCtrl,
+                        keyboardType: TextInputType.number,
+                        onChanged: (v) => quantity = int.tryParse(v) ?? 1,
+                      ),
                     ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: AppTextField(
+                        label: 'السعر (\$)',
+                        controller: priceCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true),
+                        onChanged: (v) => price = double.tryParse(v) ?? 0,
+                      ),
+                    ),
+                  ]),
+                  const SizedBox(height: 12),
+                  AppTextField(
+                    label: 'خصم (%)',
+                    controller: discCtrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    onChanged: (v) => discount = double.tryParse(v) ?? 0,
                   ),
-                ]),
-                const SizedBox(height: 12),
-                AppTextField(
-                  label: 'خصم (%)',
-                  controller: discCtrl,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  onChanged: (v) => discount = double.tryParse(v) ?? 0,
-                ),
-              ],
+                  const Divider(height: 32),
+                  const SectionHeader(title: 'مواد مستهلكة (إضافية)'),
+                  const SizedBox(height: 8),
+                  if (selectedConsumables.isEmpty)
+                    Text('لا توجد مواد مختارة',
+                        style: TextStyle(
+                            color: AppColors.textHint,
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic))
+                  else
+                    Column(
+                      children: selectedConsumables.asMap().entries.map((entry) {
+                        final idx = entry.key;
+                        final con = entry.value;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: Text(con.name,
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600)),
+                              ),
+                              Expanded(
+                                flex: 1,
+                                child: Text('× ${con.quantity}',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(fontSize: 13)),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline,
+                                    color: AppColors.error, size: 20),
+                                onPressed: () =>
+                                    setSt(() => selectedConsumables.removeAt(idx)),
+                                compact: true,
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  const SizedBox(height: 8),
+                  SecondaryButton(
+                    label: 'إضافة مادة',
+                    icon: Icons.inventory_2_outlined,
+                    compact: true,
+                    onPressed: () async {
+                      final res = await _showAddMaterialDialog(context, allItems);
+                      if (res != null) setSt(() => selectedConsumables.add(res));
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -384,7 +464,7 @@ class _ProceduresCard extends ConsumerWidget {
                 onPressed: () => Navigator.pop(ctx),
                 child: const Text('إلغاء')),
             PrimaryButton(
-              label: 'إضافة',
+              label: 'حفظ الإجراء',
               onPressed: () async {
                 if (selectedProcedureId == null) return;
                 Navigator.pop(ctx);
@@ -395,6 +475,7 @@ class _ProceduresCard extends ConsumerWidget {
                   quantity: quantity,
                   unitPrice: price,
                   discount: discount.clamp(0, 100),
+                  consumables: selectedConsumables,
                 );
               },
             ),
@@ -408,6 +489,104 @@ class _ProceduresCard extends ConsumerWidget {
     discCtrl.dispose();
   }
 
+  Future<VisitConsumable?> _showAddMaterialDialog(
+      BuildContext context, List<InventoryItem> items) async {
+    int? selectedId;
+    final qtyCtrl = TextEditingController(text: '1');
+    double qty = 1;
+
+    return showDialog<VisitConsumable>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) => AlertDialog(
+          title: const Text('اختيار مادة مستهلكة'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppDropdown<int>(
+                label: 'المادة',
+                value: selectedId,
+                items: items
+                    .map((i) => DropdownMenuItem(
+                        value: i.id, child: Text('${i.name} (المتوفر: ${i.quantity})')))
+                    .toList(),
+                onChanged: (v) => setSt(() => selectedId = v),
+              ),
+              const SizedBox(height: 12),
+              AppTextField(
+                label: 'الكمية',
+                controller: qtyCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                onChanged: (v) => qty = double.tryParse(v) ?? 1,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+            PrimaryButton(
+              label: 'إضافة',
+              onPressed: () {
+                if (selectedId == null) return;
+                final item = items.firstWhere((i) => i.id == selectedId);
+                Navigator.pop(ctx, VisitConsumable(
+                  itemId: item.id!,
+                  name: item.name,
+                  quantity: qty,
+                  unitCost: item.unitCost,
+                ));
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<int?> _showQuickAddProcedureDialog(BuildContext context, WidgetRef ref) async {
+    final nameCtrl = TextEditingController();
+    final priceCtrl = TextEditingController();
+    
+    return showDialog<int>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('إجراء طبي جديد'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppTextField(label: 'اسم الإجراء', controller: nameCtrl),
+            const SizedBox(height: 12),
+            AppTextField(
+                label: 'السعر الافتراضي',
+                controller: priceCtrl,
+                keyboardType: TextInputType.number),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          PrimaryButton(
+            label: 'حفظ',
+            onPressed: () async {
+              if (nameCtrl.text.isEmpty) return;
+              try {
+                final repo = ref.read(procedureRepositoryProvider);
+                final id = await repo.create(Procedure(
+                  name: nameCtrl.text,
+                  defaultPrice: double.tryParse(priceCtrl.text) ?? 0,
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                ));
+                if (ctx.mounted) Navigator.pop(ctx, id);
+              } catch (e) {
+                if (ctx.mounted) showSnack(ctx, 'خطأ: $e', error: true);
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _doAddProcedure({
     required BuildContext context,
     required WidgetRef ref,
@@ -415,6 +594,7 @@ class _ProceduresCard extends ConsumerWidget {
     required int quantity,
     required double unitPrice,
     required double discount,
+    List<VisitConsumable>? consumables,
   }) async {
     try {
       final visitRepo = ref.read(visitRepositoryProvider);
@@ -429,6 +609,7 @@ class _ProceduresCard extends ConsumerWidget {
         unitPrice: unitPrice,
         discount: discount,
         createdAt: DateTime.now(),
+        consumables: consumables,
       ));
 
       // 2. Sync / create the invoice atomically

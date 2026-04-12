@@ -49,7 +49,10 @@ class DashboardScreen extends ConsumerWidget {
                 if (isWide) {
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: children.map((w) => Expanded(child: w)).toList(),
+                    children: children.map((w) {
+                      if (w is SizedBox) return w;
+                      return Expanded(child: w);
+                    }).toList(),
                   );
                 }
                 return Column(
@@ -93,7 +96,7 @@ class DashboardScreen extends ConsumerWidget {
               ]).animate().fadeIn(duration: 600.ms, delay: 200.ms).slideY(begin: 0.05);
             },
           ),
-          const SizedBox(height: AppSpacing.xxl),
+          const SizedBox(height: AppSpacing.lg),
         ],
       ),
     );

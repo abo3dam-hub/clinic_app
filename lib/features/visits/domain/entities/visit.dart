@@ -75,6 +75,7 @@ class VisitProcedureItem {
 
   // Joined
   final String? procedureName;
+  final List<VisitConsumable>? consumables;
 
   const VisitProcedureItem({
     this.id,
@@ -86,7 +87,22 @@ class VisitProcedureItem {
     this.notes,
     required this.createdAt,
     this.procedureName,
+    this.consumables,
   });
 
   double get lineTotal => (unitPrice * quantity) * (1 - discount / 100);
+}
+
+class VisitConsumable {
+  final int itemId;
+  final String name;
+  final double quantity;
+  final double unitCost;
+
+  const VisitConsumable({
+    required this.itemId,
+    required this.name,
+    required this.quantity,
+    required this.unitCost,
+  });
 }

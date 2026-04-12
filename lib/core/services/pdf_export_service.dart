@@ -570,6 +570,11 @@ class PdfExportService {
   // ─── Doctor Revenue PDF ───────────────────────────────────────
 
   Future<Uint8List> generateDoctorRevenuePdf(DoctorRevenueResult result) async {
+    return generateDoctorPerformanceListPdf([result], 'إيرادات الطبيب التفصيلية');
+  }
+
+  Future<Uint8List> generateDoctorPerformanceListPdf(
+      List<DoctorRevenueResult> results, String title) async {
     await _Pdf.loadFonts();
     final doc = pw.Document(
       theme: pw.ThemeData.withFont(base: _Pdf._cairo!, bold: _Pdf._cairoBold!),
@@ -580,11 +585,8 @@ class PdfExportService {
         pageFormat: PdfPageFormat.a4,
         textDirection: pw.TextDirection.rtl,
         margin: pw.EdgeInsets.zero,
-        header: (ctx) => _Pdf.header(
-          clinicName,
-          'إيرادات الطبيب',
-          '${result.doctorName} — ${result.grossRevenue.toStringAsFixed(2)} USD',
-        ),
+        header: (ctx) => _Pdf.header(clinicName, title,
+            DateFormat('yyyy/MM/dd HH:mm').format(DateTime.now())),
         footer: (ctx) => _Pdf.footer(ctx.pageNumber, ctx.pagesCount),
         build: (ctx) => [
           pw.Padding(
@@ -593,33 +595,37 @@ class PdfExportService {
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
                 pw.SizedBox(height: 16),
-                _Pdf.summaryCard([
-                  _SumRow('الطبيب', result.doctorName),
-                  _SumRow('التخصص',
-                      result.specialty.isEmpty ? '-' : result.specialty),
-                  _SumRow('إجمالي الزيارات', '${result.totalVisits}'),
-                  _SumRow('إجمالي الإيرادات', _Pdf.fmt(result.grossRevenue),
-                      color: _Pdf.secondary),
-                  _SumRow('نسبة العمولة',
-                      '${result.commissionPct.toStringAsFixed(1)}%'),
-                  _SumRow('مبلغ العمولة', _Pdf.fmt(result.commissionAmount),
-                      color: _Pdf.errorClr),
-                  _SumRow('الصافي بعد العمولة', _Pdf.fmt(result.netRevenue),
-                      bold: true, color: _Pdf.primary),
-                ]),
-                _Pdf.sectionTitle('التفصيل اليومي'),
                 pw.Table(
                   border: pw.TableBorder.all(color: _Pdf.border, width: 0.5),
                   children: [
-                    _Pdf.tableHeaderRow(['التاريخ', 'الزيارات', 'الإيرادات']),
-                    ...result.dailyBreakdown
-                        .asMap()
-                        .entries
-                        .map((e) => _Pdf.tableDataRow([
-                              e.value.date,
-                              '${e.value.visits}',
-                              _Pdf.fmt(e.value.revenue),
-                            ], even: e.key.isEven)),
+                    _Pdf.tableHeaderRow([
+                      'الطبيب',
+                      'الزيارات',
+                      'الإيرادات',
+                      'العمولة %',
+                      'العمولة',
+                      'الصافي'
+                    ]),
+                    ...results.asMap().entries.map((e) {
+                      final r = e.value;
+                      return _Pdf.tableDataRow([
+                        r.doctorName,
+                        '${r.totalVisits}',
+                        _Pdf.fmt(r.grossRevenue),
+                        '${r.commissionPct.toStringAsFixed(1)}%',
+                        _Pdf.fmt(r.commissionAmount),
+                        _Pdf.fmt(r.netRevenue),
+                      ],
+                          even: e.key.isEven,
+                          cellColors: [
+                            null,
+                            null,
+                            _Pdf.secondary,
+                            null,
+                            _Pdf.errorClr,
+                            _Pdf.primary
+                          ]);
+                    }),
                   ],
                 ),
               ],

@@ -155,7 +155,7 @@ class VisitRepositoryImpl {
 
   Future<int> addProcedure(VisitProcedureItem item) async {
     await _assertNotLocked(item.visitId);
-    
+
     return _db.runTransaction<int>((txn) async {
       final now = DateTime.now().toIso8601String();
       final map = {
@@ -168,96 +168,111 @@ class VisitRepositoryImpl {
         'created_at': now,
       };
       final vpId = await txn.insert('visit_procedures', map);
+      final ref = 'VISIT-${item.visitId}-PROC-$vpId';
 
-      // Inventory Deduction (ERP): Auto-consume materials
-      final materials = await txn.query('procedure_materials', 
+      // 1. Auto-consume materials (from template)
+      final materials = await txn.query('procedure_materials',
           where: 'procedure_id = ?', whereArgs: [item.procedureId]);
-      
+
       for (final mat in materials) {
         final invId = mat['inventory_id'] as int;
         final qtyPerProc = (mat['quantity'] as num).toDouble();
         final totalToConsume = qtyPerProc * item.quantity;
-        
+
         final itemRows = await txn.query('items', where: 'id = ?', whereArgs: [invId], limit: 1);
         if (itemRows.isNotEmpty) {
           final currentQty = (itemRows.first['quantity'] as num).toDouble();
-          final newQty = currentQty - totalToConsume;
           final unitCost = (itemRows.first['unit_cost'] as num).toDouble();
-          
-          if (newQty < 0) {
-            throw StateError('المخزون للصنف غير كافٍ. المتوفر \$currentQty والمطلوب \$totalToConsume');
-          }
 
           await txn.insert('stock_movements', {
             'item_id': invId,
             'type': 'out',
             'quantity': totalToConsume,
             'unit_cost': unitCost,
-            'reference': 'VISIT-\${item.visitId}-PROC-\$vpId',
-            'notes': 'استهلاك تلقائي: \${item.procedureName ?? "إجراءات"}',
+            'reference': ref,
+            'notes': 'استهلاك تلقائي: ${item.procedureName ?? "إجراءات"}',
             'movement_date': now.split('T')[0],
             'created_at': now,
           });
 
-          await txn.update('items', 
-            {'quantity': newQty, 'updated_at': now},
-            where: 'id = ?', whereArgs: [invId]);
+          await txn.update('items',
+              {'quantity': currentQty - totalToConsume, 'updated_at': now},
+              where: 'id = ?', whereArgs: [invId]);
         }
       }
+
+      // 2. Ad-hoc consumables (manual selection)
+      if (item.consumables != null) {
+        for (final con in item.consumables!) {
+          final itemRows = await txn.query('items', where: 'id = ?', whereArgs: [con.itemId], limit: 1);
+          if (itemRows.isNotEmpty) {
+            final currentQty = (itemRows.first['quantity'] as num).toDouble();
+            await txn.insert('stock_movements', {
+              'item_id': con.itemId,
+              'type': 'out',
+              'quantity': con.quantity,
+              'unit_cost': con.unitCost,
+              'reference': ref,
+              'notes': 'استهلاك يدوي: ${item.procedureName ?? "إجراءات"}',
+              'movement_date': now.split('T')[0],
+              'created_at': now,
+            });
+            await txn.update('items',
+                {'quantity': currentQty - con.quantity, 'updated_at': now},
+                where: 'id = ?', whereArgs: [con.itemId]);
+          }
+        }
+      }
+
       return vpId;
     });
   }
 
-  /// FIX #7 – Added lock guard before deletion.
-  /// Previously, a procedure could be removed from a locked visit by calling
-  /// this method directly, bypassing the isLocked invariant.
   Future<void> removeProcedure(int id) async {
-    // Fetch the row first to extract visit_id for the lock check.
     final rows = await _db.query('visit_procedures',
         where: 'id = ?', whereArgs: [id], limit: 1);
     if (rows.isEmpty) return;
 
     final visitId = rows.first['visit_id'] as int;
-    final procedureId = rows.first['procedure_id'] as int;
-    final quantityUsed = (rows.first['quantity'] as num).toDouble();
-    // FIX #7: enforce the visit lock before any mutation.
     await _assertNotLocked(visitId);
 
     await _db.runTransaction<void>((txn) async {
-      await txn.delete('visit_procedures', where: 'id = ?', whereArgs: [id]);
-
-      // Reverse Inventory Deduction
       final now = DateTime.now().toIso8601String();
-      final materials = await txn.query('procedure_materials', 
-          where: 'procedure_id = ?', whereArgs: [procedureId]);
-      
-      for (final mat in materials) {
-        final invId = mat['inventory_id'] as int;
-        final qtyPerProc = (mat['quantity'] as num).toDouble();
-        final totalToReturn = qtyPerProc * quantityUsed;
-        
-        final itemRows = await txn.query('items', where: 'id = ?', whereArgs: [invId], limit: 1);
-        if (itemRows.isNotEmpty) {
-          final currentQty = (itemRows.first['quantity'] as num).toDouble();
-          final newQty = currentQty + totalToReturn;
-          final unitCost = (itemRows.first['unit_cost'] as num).toDouble();
-          
-          await txn.insert('stock_movements', {
-            'item_id': invId,
-            'type': 'in', // reversal
-            'quantity': totalToReturn,
-            'unit_cost': unitCost,
-            'reference': 'VISIT-\$visitId-PROC-\$id-DEL',
-            'notes': 'إلغاء إجراء: استرجاع تلقائي للمخزون',
-            'movement_date': now.split('T')[0],
-            'created_at': now,
-          });
+      final ref = 'VISIT-$visitId-PROC-$id';
 
-          await txn.update('items', 
-            {'quantity': newQty, 'updated_at': now},
-            where: 'id = ?', whereArgs: [invId]);
+      // Find all stock movements related to this specific procedure instance
+      final movements = await txn.query('stock_movements',
+          where: 'reference = ?', whereArgs: [ref]);
+
+      for (final mov in movements) {
+        final itemId = mov['item_id'] as int;
+        final qty = (mov['quantity'] as num).toDouble();
+        final type = mov['type'] as String;
+
+        // Reversal: if it was 'out', we add back ('in')
+        if (type == 'out') {
+          final itemRows = await txn.query('items', where: 'id = ?', whereArgs: [itemId], limit: 1);
+          if (itemRows.isNotEmpty) {
+            final currentQty = (itemRows.first['quantity'] as num).toDouble();
+            await txn.update('items',
+                {'quantity': currentQty + qty, 'updated_at': now},
+                where: 'id = ?', whereArgs: [itemId]);
+
+            await txn.insert('stock_movements', {
+              'item_id': itemId,
+              'type': 'in',
+              'quantity': qty,
+              'unit_cost': mov['unit_cost'],
+              'reference': '$ref-REV',
+              'notes': 'إلغاء إجراء: استرجاع المخزون',
+              'movement_date': now.split('T')[0],
+              'created_at': now,
+            });
+          }
         }
       }
+
+      await txn.delete('visit_procedures', where: 'id = ?', whereArgs: [id]);
     });
   }
 

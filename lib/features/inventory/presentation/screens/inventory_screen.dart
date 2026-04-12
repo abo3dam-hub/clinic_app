@@ -277,8 +277,16 @@ class _ItemsTab extends ConsumerWidget {
               try {
                 final repo = ref.read(inventoryRepositoryProvider);
                 if (item == null) {
+                try {
                   await repo.createItem(newItem);
-                  if (ctx.mounted) showSnack(ctx, 'تم إضافة الصنف');
+                  if (ctx.mounted) {
+                    showSnack(ctx, 'تم إضافة الصنف بنجاح');
+                  }
+                } catch (e) {
+                  if (ctx.mounted) {
+                    showSnack(ctx, 'خطأ أثناء إضافة الصنف: $e', error: true);
+                  }
+                }
                 } else {
                   await repo.updateItem(newItem);
                   if (ctx.mounted) showSnack(ctx, 'تم التحديث');

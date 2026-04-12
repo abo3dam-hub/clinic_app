@@ -102,6 +102,18 @@ class _DailyTab extends ConsumerWidget {
               child: AppDateField(
                   label: '', value: date, onChanged: onDateChanged),
             ),
+            const Spacer(),
+            reportAsync.when(
+              data: (r) => ExportButton(
+                fileName: 'daily_report_$date',
+                onExportPdf: (svc) => svc.generateDailyReportPdf(r),
+                onExportExcel: () => ref
+                    .read(excelExportServiceProvider)
+                    .generateDailyReportExcel(r),
+              ),
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
           ]),
           const SizedBox(height: AppSpacing.lg),
 
@@ -239,6 +251,18 @@ class _MonthlyTab extends ConsumerWidget {
               if (y != null) onChanged(y, month);
             },
           ),
+          const Spacer(),
+          reportAsync.when(
+            data: (r) => ExportButton(
+              fileName: 'monthly_report_${year}_$month',
+              onExportPdf: (svc) => svc.generatePeriodReportPdf(r),
+              onExportExcel: () => ref
+                  .read(excelExportServiceProvider)
+                  .generatePeriodReportExcel(r),
+            ),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
         ]),
         const SizedBox(height: AppSpacing.lg),
 
@@ -298,6 +322,18 @@ class _YearlyTab extends ConsumerWidget {
               if (y != null) onChanged(y);
             },
           ),
+          const Spacer(),
+          reportAsync.when(
+            data: (r) => ExportButton(
+              fileName: 'yearly_report_$year',
+              onExportPdf: (svc) => svc.generatePeriodReportPdf(r),
+              onExportExcel: () => ref
+                  .read(excelExportServiceProvider)
+                  .generatePeriodReportExcel(r),
+            ),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
         ]),
         const SizedBox(height: AppSpacing.lg),
         reportAsync.when(
@@ -326,9 +362,29 @@ class _DoctorPerfTab extends ConsumerWidget {
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
-      child: async.when(
-        loading: () => const LoadingView(),
-        error: (e, _) => ErrorView(message: e.toString()),
+      child: Column(
+        children: [
+          async.when(
+            data: (doctors) => Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ExportButton(
+                  fileName: 'doctors_perf_$year',
+                  onExportPdf: (svc) =>
+                      svc.generateDoctorPerformanceListPdf(doctors, 'أداء الأطباء لعام $year'),
+                  onExportExcel: () => ref
+                      .read(excelExportServiceProvider)
+                      .generateDoctorRevenueExcel(doctors),
+                ),
+              ],
+            ),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          async.when(
+            loading: () => const LoadingView(),
+            error: (e, _) => ErrorView(message: e.toString()),
         data: (doctors) => doctors.isEmpty
             ? const EmptyState(
                 title: 'لا توجد بيانات', icon: Icons.medical_services_outlined)
