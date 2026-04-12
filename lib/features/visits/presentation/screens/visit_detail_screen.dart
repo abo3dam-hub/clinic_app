@@ -23,9 +23,8 @@ import '../../../../core/utils/date_utils.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/visit.dart';
 import '../../../invoices/domain/entities/invoice.dart';
-import '../../../inventory/domain/entities/inventory_item.dart';
+import '../../../inventory/domain/entities/inventory.dart';
 import '../../../procedures/domain/entities/procedure.dart';
-import '../../../procedures/domain/services/procedure_service.dart';
 
 // ─── Provider for a single visit ─────────────────────────────────────────────
 final visitByIdProvider = FutureProvider.family<Visit?, int>(

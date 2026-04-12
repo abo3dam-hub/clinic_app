@@ -386,41 +386,40 @@ class _DoctorPerfTab extends ConsumerWidget {
           async.when(
             loading: () => const LoadingView(),
             error: (e, _) => ErrorView(message: e.toString()),
-        data: (doctors) => doctors.isEmpty
-            ? const EmptyState(
-                title: 'لا توجد بيانات', icon: Icons.medical_services_outlined)
-            : AppTable(
-                headers: const [
-                  'الطبيب',
-                  'الزيارات',
-                  'الإيرادات',
-                  'العمولة %',
-                  'مبلغ العمولة',
-                  'الصافي'
-                ],
-                rows: doctors
-                    .map((d) => [
-                          Text(d.doctorName,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w600)),
-                          Text('${d.totalVisits}'),
-                          Text('${fmt.format(d.grossRevenue)} USD',
-                              style: const TextStyle(
-                                  color: AppColors.success,
-                                  fontWeight: FontWeight.w600)),
-                          Text('${d.commissionPct.toStringAsFixed(1)}%'),
-                          Text('${fmt.format(d.commissionAmount)} USD',
-                              style: const TextStyle(color: AppColors.warning)),
-                          Text('${fmt.format(d.netRevenue)} USD',
-                              style: const TextStyle(
-                                  color: AppColors.primary,
-                                  fontWeight: FontWeight.w700)),
-                        ])
-                    .toList(),
-              ),
-            ),
-          ],
-        ),
+            data: (doctors) => doctors.isEmpty
+                ? const EmptyState(
+                    title: 'لا توجد بيانات', icon: Icons.medical_services_outlined)
+                : AppTable(
+                    headers: const [
+                      'الطبيب',
+                      'الزيارات',
+                      'الإيرادات',
+                      'العمولة %',
+                      'مبلغ العمولة',
+                      'الصافي'
+                    ],
+                    rows: doctors
+                        .map((d) => [
+                              Text(d.doctorName,
+                                  style:
+                                      const TextStyle(fontWeight: FontWeight.w600)),
+                              Text('${d.totalVisits}'),
+                              Text('${fmt.format(d.grossRevenue)} USD',
+                                  style: const TextStyle(
+                                      color: AppColors.success,
+                                      fontWeight: FontWeight.w600)),
+                              Text('${d.commissionPct.toStringAsFixed(1)}%'),
+                              Text('${fmt.format(d.commissionAmount)} USD',
+                                  style: const TextStyle(color: AppColors.warning)),
+                              Text('${fmt.format(d.netRevenue)} USD',
+                                  style: const TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w700)),
+                            ])
+                        .toList(),
+                  ),
+          ),
+        ],
       ),
     );
   }
