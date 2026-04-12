@@ -246,8 +246,9 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
           ),
         ),
       ),
+        );
+      },
     );
-  },
   }
 }
 

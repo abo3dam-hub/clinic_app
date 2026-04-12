@@ -112,17 +112,29 @@ class _Greeting extends StatelessWidget {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
+          width: 60,
+          height: 60,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppColors.primary, AppColors.primaryLight],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: Colors.white,
             shape: BoxShape.circle,
-            boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 12, offset: const Offset(0,4))],
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.2),
+                blurRadius: 15,
+                offset: const Offset(0, 5),
+              )
+            ],
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.1),
+              width: 2,
+            ),
           ),
-          child: Icon(icon, color: Colors.white, size: 28),
+          child: ClipOval(
+            child: Image.asset(
+              'assets/images/logo.png',
+              fit: BoxFit.cover,
+            ),
+          ),
         ),
         const SizedBox(width: AppSpacing.md),
         Column(
