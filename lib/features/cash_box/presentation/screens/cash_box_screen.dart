@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/providers/service_providers.dart';
-import '../../../../core/providers/repository_providers.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../shared/widgets/app_widgets.dart';
-import '../../../inventory/domain/entities/inventory.dart';
+import 'package:clinic_app/core/providers/service_providers.dart';
+import 'package:clinic_app/core/providers/repository_providers.dart';
+import 'package:clinic_app/core/theme/app_theme.dart';
+import 'package:clinic_app/shared/widgets/app_widgets.dart';
+import 'package:clinic_app/features/cash_box/domain/entities/cash_box.dart';
 
 class CashBoxScreen extends ConsumerStatefulWidget {
   const CashBoxScreen({super.key});

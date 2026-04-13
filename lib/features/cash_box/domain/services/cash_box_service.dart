@@ -1,8 +1,8 @@
 // lib/features/cash_box/domain/services/cash_box_service.dart
 
-import '../../../inventory/data/repositories/inventory_repository_impl.dart';
-import '../../../../core/utils/date_utils.dart';
-import '../../../../features/inventory/domain/entities/inventory.dart';
+import 'package:clinic_app/features/cash_box/data/repositories/cash_box_repository_impl.dart';
+import 'package:clinic_app/core/utils/date_utils.dart';
+import 'package:clinic_app/features/cash_box/domain/entities/cash_box.dart';
 
 class CashBoxService {
   final CashBoxRepositoryImpl _cashBoxRepo;
