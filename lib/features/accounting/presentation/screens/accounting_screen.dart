@@ -6,12 +6,12 @@
 //   3. Balance Sheet
 
 import 'dart:typed_data';
-import 'package:clinic_app/core/providers/repository_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 import '../../data/repositories/ledger_repository.dart';
-import '../domain/services/journal_service.dart';
+import '../../domain/services/journal_service.dart';
 import '../../../../core/providers/service_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_utils.dart';
@@ -141,6 +141,48 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen>
       ]),
     );
   }
+
+  Future<void> _handleExport(BuildContext context, WidgetRef ref, {required bool isPdf}) async {
+    final period = ref.read(accountingPeriodProvider);
+    final tabIndex = _tabs.index;
+    final pdfService = ref.read(pdfExportServiceProvider);
+    final excelService = ref.read(excelExportServiceProvider);
+
+    try {
+      showSnack(context, 'جاري تحضير الملف...');
+      Uint8List bytes;
+      String name;
+
+      if (tabIndex == 0) {
+        // Trial Balance
+        final data = await ref.read(trialBalanceProvider(period).future);
+        name = 'ميزان_المراجعة_${_safeName(period.fromDate)}';
+        bytes = isPdf 
+          ? await pdfService.generateTrialBalancePdf(balances: data, fromDate: period.fromDate, toDate: period.toDate)
+          : await excelService.generateTrialBalanceExcel(balances: data, fromDate: period.fromDate, toDate: period.toDate);
+      } else if (tabIndex == 1) {
+        // Income Statement
+        final data = await ref.read(incomeStatementProvider(period).future);
+        name = 'قائمة_الدخل_${_safeName(period.fromDate)}';
+        bytes = isPdf 
+          ? await pdfService.generateIncomeStatementPdf(data)
+          : await excelService.generateIncomeStatementExcel(data);
+      } else {
+        // Balance Sheet
+        final data = await ref.read(balanceSheetProvider(period.toDate).future);
+        name = 'الميزانية_العمومية_${_safeName(period.toDate)}';
+        bytes = isPdf 
+          ? await pdfService.generateBalanceSheetPdf(data)
+          : await excelService.generateBalanceSheetExcel(data);
+      }
+
+      await pdfService.printOrShare(bytes, name: name);
+    } catch (e) {
+      if (context.mounted) showSnack(context, 'خطأ أثناء التصدير: $e', error: true);
+    }
+  }
+
+  String _safeName(String s) => s.replaceAll('-', '_');
 }
 
 // ─── Period Bar ───────────────────────────────────────────────────────────────
