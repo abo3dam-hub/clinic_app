@@ -77,29 +77,34 @@ class DashboardScreen extends ConsumerWidget {
                       // Secondary Content (Right Sidebar)
                       Expanded(
                         flex: 1,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _AppointmentsCard(apptCounts: apptCounts),
-                            const SizedBox(height: AppSpacing.lg),
-                            _LowStockCard(lowStockAsync: lowStock),
-                            const SizedBox(height: AppSpacing.lg),
-                            daily.when(
-                              loading: () => const SizedBox(
-                                  height: 100, child: LoadingView()),
-                              error: (_, __) => const SizedBox.shrink(),
-                              data: (report) => _CashBoxCard(
-                                  cashBoxAsync: cashBox, report: report),
-                            ),
-                            const SizedBox(height: AppSpacing.lg),
-                            daily.when(
-                              loading: () => const SizedBox(
-                                  height: 100, child: LoadingView()),
-                              error: (_, __) => const SizedBox.shrink(),
-                              data: (report) =>
-                                  _DoctorStatsCard(report: report),
-                            ),
-                          ],
+                        child: SingleChildScrollView(
+                          physics: const NeverScrollableScrollPhysics(),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _AppointmentsCard(apptCounts: apptCounts),
+                              const SizedBox(height: AppSpacing.lg),
+                              _LowStockCard(lowStockAsync: lowStock),
+                              const SizedBox(height: AppSpacing.lg),
+                              daily.when(
+                                loading: () => const SizedBox(
+                                    height: 100, child: LoadingView()),
+                                error: (_, __) => const SizedBox.shrink(),
+                                data: (report) => _CashBoxCard(
+                                    cashBoxAsync: cashBox, report: report),
+                              ),
+                              const SizedBox(height: AppSpacing.lg),
+                              daily.when(
+                                loading: () => const SizedBox(
+                                    height: 100, child: LoadingView()),
+                                error: (_, __) => const SizedBox.shrink(),
+                                data: (report) =>
+                                    _DoctorStatsCard(report: report),
+                              ),
+                              const SizedBox(height: AppSpacing.xl),
+                            ],
+                          ),
                         ),
                       ),
                     ],
