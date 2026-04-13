@@ -9,7 +9,7 @@ import 'package:clinic_app/core/providers/service_providers.dart';
 import 'package:clinic_app/core/theme/app_theme.dart';
 import 'package:clinic_app/core/utils/date_utils.dart';
 import 'package:clinic_app/shared/widgets/app_widgets.dart';
-import 'package:clinic_app/features/cash_box/domain/entities/cash_box.dart';
+
 import 'package:clinic_app/features/patients/domain/entities/patient.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -24,96 +24,117 @@ class DashboardScreen extends ConsumerWidget {
     final lowStock = ref.watch(lowStockProvider);
     final pendingBalances = ref.watch(pendingBalancesProvider);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Greeting & Welcome ──────────────────────────────────────────
-          _Greeting().animate().fadeIn(duration: 400.ms).slideX(begin: -0.05),
-          const SizedBox(height: AppSpacing.xl),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFF0F4FF), Color(0xFFF8FAFC), Color(0xFFF0FDF4)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Greeting & Welcome ──────────────────────────────────────────
+            _Greeting().animate().fadeIn(duration: 400.ms).slideX(begin: -0.05),
+            const SizedBox(height: AppSpacing.xl),
 
-          // ── Main Layout ────────────────────────────────────────────────
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 1100;
-              
-              if (isWide) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            // ── HERO: Patient Dossier (full-width, top prominence) ──────────
+            const _PatientDossierCard()
+                .animate()
+                .fadeIn(duration: 500.ms, delay: 100.ms)
+                .slideY(begin: 0.08),
+            const SizedBox(height: AppSpacing.xl),
+
+            // ── Main Layout ────────────────────────────────────────────────
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth > 1100;
+
+                if (isWide) {
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Primary Content (Left)
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            daily.when(
+                              loading: () => const LoadingView(),
+                              error: (e, _) => ErrorView(message: e.toString()),
+                              data: (report) => _StatsGrid(report: report),
+                            ),
+                            const SizedBox(height: AppSpacing.xl),
+                            _PendingPatientsWidget(balancesAsync: pendingBalances),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.xl),
+                      // Secondary Content (Right Sidebar)
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _AppointmentsCard(apptCounts: apptCounts),
+                            const SizedBox(height: AppSpacing.lg),
+                            _LowStockCard(lowStockAsync: lowStock),
+                            const SizedBox(height: AppSpacing.lg),
+                            daily.when(
+                              loading: () => const SizedBox(
+                                  height: 100, child: LoadingView()),
+                              error: (_, __) => const SizedBox.shrink(),
+                              data: (report) => _CashBoxCard(
+                                  cashBoxAsync: cashBox, report: report),
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                            daily.when(
+                              loading: () => const SizedBox(
+                                  height: 100, child: LoadingView()),
+                              error: (_, __) => const SizedBox.shrink(),
+                              data: (report) =>
+                                  _DoctorStatsCard(report: report),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                // Mobile/Tablet Stack
+                return Column(
                   children: [
-                    // Primary Content (Left)
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          daily.when(
-                            loading: () => const LoadingView(),
-                            error: (e, _) => ErrorView(message: e.toString()),
-                            data: (report) => _StatsGrid(report: report),
-                          ),
-                          const SizedBox(height: AppSpacing.xl),
-                          const _PatientDossierCard(),
-                          const SizedBox(height: AppSpacing.xl),
-                          _PendingPatientsWidget(balancesAsync: pendingBalances),
-                        ],
-                      ),
+                    daily.when(
+                      loading: () => const LoadingView(),
+                      error: (e, _) => ErrorView(message: e.toString()),
+                      data: (report) => _StatsGrid(report: report),
                     ),
-                    const SizedBox(width: AppSpacing.xl),
-                    // Secondary Content (Right Sidebar)
-                    Expanded(
-                      flex: 1,
-                      child: Column(
-                        children: [
-                          _AppointmentsCard(apptCounts: apptCounts),
-                          const SizedBox(height: AppSpacing.lg),
-                          _LowStockCard(lowStockAsync: lowStock),
-                          const SizedBox(height: AppSpacing.lg),
-                          daily.when(
-                            loading: () => const SizedBox(height: 100, child: LoadingView()),
-                            error: (_, __) => const SizedBox.shrink(),
-                            data: (report) => _CashBoxCard(cashBoxAsync: cashBox, report: report),
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          daily.when(
-                            loading: () => const SizedBox(height: 100, child: LoadingView()),
-                            error: (_, __) => const SizedBox.shrink(),
-                            data: (report) => _DoctorStatsCard(report: report),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: AppSpacing.xl),
+                    _AppointmentsCard(apptCounts: apptCounts),
+                    const SizedBox(height: AppSpacing.lg),
+                    _PendingPatientsWidget(balancesAsync: pendingBalances),
+                    const SizedBox(height: AppSpacing.lg),
+                    _LowStockCard(lowStockAsync: lowStock),
+                    const SizedBox(height: AppSpacing.lg),
+                    daily.when(
+                      loading: () =>
+                          const SizedBox(height: 100, child: LoadingView()),
+                      error: (_, __) => const SizedBox.shrink(),
+                      data: (report) =>
+                          _CashBoxCard(cashBoxAsync: cashBox, report: report),
                     ),
                   ],
                 );
-              }
-
-              // Mobile/Tablet Stack
-              return Column(
-                children: [
-                  daily.when(
-                    loading: () => const LoadingView(),
-                    error: (e, _) => ErrorView(message: e.toString()),
-                    data: (report) => _StatsGrid(report: report),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  _AppointmentsCard(apptCounts: apptCounts),
-                  const SizedBox(height: AppSpacing.lg),
-                  _PendingPatientsWidget(balancesAsync: pendingBalances),
-                  const SizedBox(height: AppSpacing.lg),
-                  _LowStockCard(lowStockAsync: lowStock),
-                  const SizedBox(height: AppSpacing.lg),
-                  daily.when(
-                    loading: () => const SizedBox(height: 100, child: LoadingView()),
-                    error: (_, __) => const SizedBox.shrink(),
-                    data: (report) => _CashBoxCard(cashBoxAsync: cashBox, report: report),
-                  ),
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: AppSpacing.xl),
-        ],
+              },
+            ),
+            const SizedBox(height: AppSpacing.xl),
+          ],
+        ),
       ),
     );
   }
@@ -125,9 +146,13 @@ class _Greeting extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hour = DateTime.now().hour;
-    final greet = hour < 12 ? 'صباح الخير دكتور' : hour < 17 ? 'مساء الخير دكتور' : 'طاب مساؤك دكتور';
+    final greet = hour < 12
+        ? 'صباح الخير دكتور'
+        : hour < 17
+            ? 'مساء الخير دكتور'
+            : 'طاب مساؤك دكتور';
     final fmt = DateFormat('EEEE، d MMMM yyyy', 'ar');
-    
+
     return Row(
       children: [
         // ── Large Logo ──────────────────────────────────────────────
@@ -135,7 +160,7 @@ class _Greeting extends StatelessWidget {
           tag: 'app-logo',
           child: Image.asset(
             'assets/images/logo.png',
-            width: 140, // Large logo as requested
+            width: 140,
             height: 140,
             fit: BoxFit.contain,
             errorBuilder: (context, error, stackTrace) => Container(
@@ -145,7 +170,8 @@ class _Greeting extends StatelessWidget {
                 color: AppColors.primarySurface,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(Icons.medical_services, size: 60, color: AppColors.primary),
+              child: const Icon(Icons.medical_services,
+                  size: 60, color: AppColors.primary),
             ),
           ),
         ),
@@ -155,29 +181,41 @@ class _Greeting extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(greet,
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      color: AppColors.textPrimary, fontWeight: FontWeight.w900, letterSpacing: -1)),
+              Text(
+                greet,
+                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -1),
+              ),
               const SizedBox(height: 8),
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppColors.primarySurface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                      border: Border.all(
+                          color: AppColors.primary.withOpacity(0.2)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.calendar_month, size: 16, color: AppColors.primary),
+                        const Icon(Icons.calendar_month,
+                            size: 16, color: AppColors.primary),
                         const SizedBox(width: 10),
-                        Text(fmt.format(DateTime.now()),
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.primary, 
-                              fontWeight: FontWeight.w800,
-                            )),
+                        Text(
+                          fmt.format(DateTime.now()),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
                       ],
                     ),
                   ),
@@ -201,7 +239,8 @@ class _RealTimeClock extends StatelessWidget {
       stream: Stream.periodic(const Duration(seconds: 1)),
       builder: (context, snapshot) {
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -209,10 +248,15 @@ class _RealTimeClock extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(Icons.access_time, size: 16, color: AppColors.textSecondary),
+              const Icon(Icons.access_time,
+                  size: 16, color: AppColors.textSecondary),
               const SizedBox(width: 8),
-              Text(DateFormat('hh:mm:ss a').format(DateTime.now()),
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+              Text(
+                DateFormat('hh:mm:ss a').format(DateTime.now()),
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textSecondary),
+              ),
             ],
           ),
         );
@@ -246,7 +290,7 @@ class _StatsGrid extends StatelessWidget {
               value: '${report.totalVisits}',
               subtitle: '${report.totalPatients} مريض مسجل',
               icon: Icons.people_outline,
-              color: const Color(0xFF6366f1),
+              gradientColors: const [Color(0xFF6366F1), Color(0xFF8B5CF6)],
               onTap: () => context.push('/visits'),
             ),
             _InteractiveStatCard(
@@ -254,7 +298,7 @@ class _StatsGrid extends StatelessWidget {
               value: '${fmt.format(report.totalInvoiced)} \$',
               subtitle: 'المبلغ الإجمالي المستحق',
               icon: Icons.receipt_long_outlined,
-              color: const Color(0xFF0ea5e9),
+              gradientColors: const [Color(0xFF0EA5E9), Color(0xFF06B6D4)],
               onTap: () => context.push('/invoices'),
             ),
             _InteractiveStatCard(
@@ -262,15 +306,15 @@ class _StatsGrid extends StatelessWidget {
               value: '${fmt.format(report.totalCollected)} \$',
               subtitle: 'المقبوضات النقدية اليوم',
               icon: Icons.payments_outlined,
-              color: const Color(0xFF10b981),
-              onTap: () => context.push('/invoices'), 
+              gradientColors: const [Color(0xFF10B981), Color(0xFF14B8A6)],
+              onTap: () => context.push('/invoices'),
             ),
             _InteractiveStatCard(
               title: 'صافي الربح',
               value: '${fmt.format(report.netCash)} \$',
               subtitle: 'بعد خصم المصروفات',
               icon: Icons.account_balance_outlined,
-              color: const Color(0xFFf59e0b),
+              gradientColors: const [Color(0xFFF59E0B), Color(0xFFEF4444)],
               onTap: () => context.push('/cash-box'),
             ),
           ],
@@ -280,12 +324,14 @@ class _StatsGrid extends StatelessWidget {
   }
 }
 
+// ─── Vibrant Interactive Stat Card ────────────────────────────
+
 class _InteractiveStatCard extends StatefulWidget {
   final String title;
   final String value;
   final String subtitle;
   final IconData icon;
-  final Color color;
+  final List<Color> gradientColors;
   final VoidCallback onTap;
 
   const _InteractiveStatCard({
@@ -293,7 +339,7 @@ class _InteractiveStatCard extends StatefulWidget {
     required this.value,
     required this.subtitle,
     required this.icon,
-    required this.color,
+    required this.gradientColors,
     required this.onTap,
   });
 
@@ -306,6 +352,7 @@ class _InteractiveStatCardState extends State<_InteractiveStatCard> {
 
   @override
   Widget build(BuildContext context) {
+    final baseColor = widget.gradientColors.first;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _isHovered = true),
@@ -313,31 +360,26 @@ class _InteractiveStatCardState extends State<_InteractiveStatCard> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 280),
           curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: _isHovered ? widget.color.withOpacity(0.5) : AppColors.border,
-              width: 1.5,
+            gradient: LinearGradient(
+              colors: widget.gradientColors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.circular(24),
             boxShadow: [
-              if (_isHovered)
-                BoxShadow(
-                  color: widget.color.withOpacity(0.1),
-                  blurRadius: 24,
-                  offset: const Offset(0, 12),
-                )
-              else
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.02),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
+              BoxShadow(
+                color: baseColor
+                    .withOpacity(_isHovered ? 0.45 : 0.25),
+                blurRadius: _isHovered ? 28 : 14,
+                spreadRadius: _isHovered ? 2 : 0,
+                offset: const Offset(0, 10),
+              ),
             ],
           ),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -347,31 +389,45 @@ class _InteractiveStatCardState extends State<_InteractiveStatCard> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: widget.color.withOpacity(0.1),
+                      color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Icon(widget.icon, color: widget.color, size: 24),
+                    child: Icon(widget.icon,
+                        color: Colors.white, size: 26),
                   ),
                   if (_isHovered)
-                    Icon(Icons.arrow_forward_ios, size: 14, color: widget.color)
+                    const Icon(Icons.arrow_forward_ios,
+                            size: 14, color: Colors.white70)
                         .animate()
                         .fadeIn()
                         .slideX(begin: -0.5),
                 ],
               ),
               const Spacer(),
-              Text(widget.title, 
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
+              Text(
+                widget.title,
+                style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 4),
-              Text(widget.value, 
+              Text(
+                widget.value,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: AppColors.textPrimary, 
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5,
-                )),
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+              ),
               const SizedBox(height: 4),
-              Text(widget.subtitle, 
-                style: const TextStyle(color: AppColors.textHint, fontSize: 11, fontWeight: FontWeight.w500)),
+              Text(
+                widget.subtitle,
+                style: const TextStyle(
+                    color: Colors.white60,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500),
+              ),
             ],
           ),
         ),
@@ -389,7 +445,7 @@ class _PendingPatientsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat('#,##0.0', 'ar');
-    
+
     return AppCard(
       padding: EdgeInsets.zero,
       child: Column(
@@ -402,21 +458,27 @@ class _PendingPatientsWidget extends StatelessWidget {
                 const SectionHeader(title: 'مطالبات مالية معلقة'),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppColors.errorSurface,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: balancesAsync.when(
-                    data: (list) => Text('${(list as List).length}', 
-                      style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold)),
+                    data: (list) => Text(
+                      '${(list as List).length}',
+                      style: const TextStyle(
+                          color: AppColors.error,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold),
+                    ),
                     loading: () => const SizedBox.shrink(),
-                    error: (_,__) => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
                   ),
                 ),
                 const Spacer(),
                 SecondaryButton(
-                  label: 'عرض الكل', 
+                  label: 'عرض الكل',
                   compact: true,
                   onPressed: () => context.push('/accounting'),
                 ),
@@ -425,7 +487,8 @@ class _PendingPatientsWidget extends StatelessWidget {
           ),
           const Divider(height: 1),
           balancesAsync.when(
-            loading: () => const SizedBox(height: 200, child: LoadingView()),
+            loading: () =>
+                const SizedBox(height: 200, child: LoadingView()),
             error: (e, _) => Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: ErrorView(message: e.toString()),
@@ -435,33 +498,52 @@ class _PendingPatientsWidget extends StatelessWidget {
               if (list.isEmpty) {
                 return const Padding(
                   padding: EdgeInsets.all(AppSpacing.xl),
-                  child: EmptyState(title: 'لا يوجد مطالبات معلقة حالياً', icon: Icons.check_circle_outline),
+                  child: EmptyState(
+                      title: 'لا يوجد مطالبات معلقة حالياً',
+                      icon: Icons.check_circle_outline),
                 );
               }
-              
+
               return ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: list.length > 5 ? 5 : list.length,
-                separatorBuilder: (context, index) => const Divider(height: 1, indent: 70),
+                separatorBuilder: (context, index) =>
+                    const Divider(height: 1, indent: 70),
                 itemBuilder: (context, index) {
                   final item = list[index];
                   return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 4),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg, vertical: 4),
                     leading: CircleAvatar(
                       backgroundColor: AppColors.primarySurface,
-                      child: Text(item.patientName[0], style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
+                      child: Text(item.patientName[0],
+                          style: const TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold)),
                     ),
-                    title: Text(item.patientName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                    subtitle: Text('آخر زيارة: ${item.lastActivityDate != null ? DateFormat('yyyy-MM-dd').format(item.lastActivityDate) : 'غير محدد'}', 
-                      style: const TextStyle(fontSize: 12, color: AppColors.textHint)),
+                    title: Text(item.patientName,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 15)),
+                    subtitle: Text(
+                      'آخر زيارة: ${item.lastActivityDate != null ? DateFormat('yyyy-MM-dd').format(item.lastActivityDate) : 'غير محدد'}',
+                      style: const TextStyle(
+                          fontSize: 12, color: AppColors.textHint),
+                    ),
                     trailing: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text('${fmt.format(item.outstandingBalance)} \$', 
-                          style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.w900, fontSize: 16)),
-                        const Text('مبلغ معلق', style: TextStyle(fontSize: 10, color: AppColors.textHint)),
+                        Text(
+                          '${fmt.format(item.outstandingBalance)} \$',
+                          style: const TextStyle(
+                              color: AppColors.error,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16),
+                        ),
+                        const Text('مبلغ معلق',
+                            style: TextStyle(
+                                fontSize: 10, color: AppColors.textHint)),
                       ],
                     ),
                     onTap: () => context.push('/patients/${item.patientId}'),
@@ -498,23 +580,45 @@ class _AppointmentsCard extends StatelessWidget {
               final confirmed = counts['confirmed'] ?? 0;
               final completed = counts['completed'] ?? 0;
               final total = pending + confirmed + completed;
-              
-              if (total == 0) return const EmptyState(title: 'لا يوجد مواعيد', icon: Icons.calendar_today_outlined);
+
+              if (total == 0) {
+                return const EmptyState(
+                    title: 'لا يوجد مواعيد',
+                    icon: Icons.calendar_today_outlined);
+              }
 
               return Column(
                 children: [
                   _SegmentBar(
                     total: total,
                     segments: [
-                      _Segment(value: completed, color: AppColors.success, label: 'تم'),
-                      _Segment(value: confirmed, color: AppColors.primary, label: 'مؤكد'),
-                      _Segment(value: pending, color: AppColors.warning, label: 'انتظار'),
+                      _Segment(
+                          value: completed,
+                          color: AppColors.success,
+                          label: 'تم'),
+                      _Segment(
+                          value: confirmed,
+                          color: AppColors.primary,
+                          label: 'مؤكد'),
+                      _Segment(
+                          value: pending,
+                          color: AppColors.warning,
+                          label: 'انتظار'),
                     ],
                   ),
                   const SizedBox(height: AppSpacing.lg),
-                  _CompactApptRow(label: 'مكتملة', count: completed, color: AppColors.success),
-                  _CompactApptRow(label: 'مؤكدة', count: confirmed, color: AppColors.primary),
-                  _CompactApptRow(label: 'قيد الانتظار', count: pending, color: AppColors.warning),
+                  _CompactApptRow(
+                      label: 'مكتملة',
+                      count: completed,
+                      color: AppColors.success),
+                  _CompactApptRow(
+                      label: 'مؤكدة',
+                      count: confirmed,
+                      color: AppColors.primary),
+                  _CompactApptRow(
+                      label: 'قيد الانتظار',
+                      count: pending,
+                      color: AppColors.warning),
                 ],
               );
             },
@@ -523,7 +627,7 @@ class _AppointmentsCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: SecondaryButton(
-              label: 'إدارة المواعيد', 
+              label: 'إدارة المواعيد',
               compact: true,
               onPressed: () => context.push('/appointments'),
             ),
@@ -538,21 +642,30 @@ class _CompactApptRow extends StatelessWidget {
   final String label;
   final int count;
   final Color color;
-  const _CompactApptRow({required this.label, required this.count, required this.color});
+  const _CompactApptRow(
+      {required this.label, required this.count, required this.color});
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 10),
-        Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-        const Spacer(),
-        Text('$count', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-      ],
-    ),
-  );
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Container(
+                width: 8,
+                height: 8,
+                decoration:
+                    BoxDecoration(color: color, shape: BoxShape.circle)),
+            const SizedBox(width: 10),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 13, color: AppColors.textSecondary)),
+            const Spacer(),
+            Text('$count',
+                style: const TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      );
 }
 
 class _LowStockCard extends StatelessWidget {
@@ -569,7 +682,8 @@ class _LowStockCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const SectionHeader(title: 'نواقص المخزون'),
-              const Icon(Icons.inventory_2_outlined, color: AppColors.error, size: 20),
+              const Icon(Icons.inventory_2_outlined,
+                  color: AppColors.error, size: 20),
             ],
           ),
           const SizedBox(height: AppSpacing.md),
@@ -579,28 +693,41 @@ class _LowStockCard extends StatelessWidget {
             data: (items) {
               final list = items as List;
               if (list.isEmpty) {
-                return const Text('لا يوجد نواقص حالياً', style: TextStyle(color: AppColors.success, fontSize: 13));
+                return const Text('لا يوجد نواقص حالياً',
+                    style:
+                        TextStyle(color: AppColors.success, fontSize: 13));
               }
               return Column(
                 children: [
                   ...list.take(3).map((item) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      children: [
-                        Expanded(child: Text(item.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(color: AppColors.errorSurface, borderRadius: BorderRadius.circular(4)),
-                          child: Text('${item.quantity}', style: const TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.bold)),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Row(
+                          children: [
+                            Expanded(
+                                child: Text(item.name,
+                                    style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600))),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                  color: AppColors.errorSurface,
+                                  borderRadius: BorderRadius.circular(4)),
+                              child: Text('${item.quantity}',
+                                  style: const TextStyle(
+                                      color: AppColors.error,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  )),
+                      )),
                   const SizedBox(height: AppSpacing.md),
                   SizedBox(
                     width: double.infinity,
                     child: SecondaryButton(
-                      label: 'المخزون الكامل', 
+                      label: 'المخزون الكامل',
                       compact: true,
                       onPressed: () => context.push('/inventory'),
                     ),
@@ -634,12 +761,13 @@ class _CashBoxCard extends StatelessWidget {
             error: (e, _) => ErrorView(message: e.toString()),
             data: (box) => Column(
               children: [
-                _CashDetailRow('الرصيد الحالي', fmt.format(box.calculatedClosingBalance), AppColors.primary),
+                _CashDetailRow('الرصيد الحالي',
+                    fmt.format(box.calculatedClosingBalance), AppColors.primary),
                 const SizedBox(height: AppSpacing.md),
                 SizedBox(
                   width: double.infinity,
                   child: PrimaryButton(
-                    label: 'إغلاق الصندوق', 
+                    label: 'إغلاق الصندوق',
                     compact: true,
                     onPressed: () => context.push('/cash-box'),
                   ),
@@ -661,12 +789,17 @@ class _CashDetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      Text(label, style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
-      Text('$value \$', style: TextStyle(color: color, fontWeight: FontWeight.w900, fontSize: 18)),
-    ],
-  );
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600)),
+          Text('$value \$',
+              style: TextStyle(
+                  color: color, fontWeight: FontWeight.w900, fontSize: 18)),
+        ],
+      );
 }
 
 class _DoctorStatsCard extends StatelessWidget {
@@ -682,14 +815,19 @@ class _DoctorStatsCard extends StatelessWidget {
           const SectionHeader(title: 'أداء الأطباء'),
           const SizedBox(height: AppSpacing.md),
           if (report.doctorStats.isEmpty)
-            const EmptyState(title: 'لا يوجد بيانات', icon: Icons.medical_services_outlined)
+            const EmptyState(
+                title: 'لا يوجد بيانات',
+                icon: Icons.medical_services_outlined)
           else
-            ...report.doctorStats.take(2).map((s) => _SimpleDoctorRow(name: s.doctorName, visits: s.visits)),
+            ...report.doctorStats
+                .take(2)
+                .map((s) => _SimpleDoctorRow(
+                    name: s.doctorName, visits: s.visits)),
           const SizedBox(height: AppSpacing.md),
           SizedBox(
             width: double.infinity,
             child: SecondaryButton(
-              label: 'تقرير الأداء', 
+              label: 'تقرير الأداء',
               compact: true,
               onPressed: () => context.push('/reports'),
             ),
@@ -707,16 +845,24 @@ class _SimpleDoctorRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      children: [
-        const Icon(Icons.person_pin, size: 16, color: AppColors.textHint),
-        const SizedBox(width: 8),
-        Expanded(child: Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-        Text('$visits زيارة', style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold)),
-      ],
-    ),
-  );
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            const Icon(Icons.person_pin,
+                size: 16, color: AppColors.textHint),
+            const SizedBox(width: 8),
+            Expanded(
+                child: Text(name,
+                    style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600))),
+            Text('$visits زيارة',
+                style: const TextStyle(
+                    color: AppColors.primary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold)),
+          ],
+        ),
+      );
 }
 
 class _SegmentBar extends StatelessWidget {
@@ -730,7 +876,9 @@ class _SegmentBar extends StatelessWidget {
     return Container(
       height: 8,
       clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(4), color: AppColors.borderLight),
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(4),
+          color: AppColors.borderLight),
       child: Row(
         children: segments.map((s) {
           if (s.value == 0) return const SizedBox.shrink();
@@ -751,13 +899,14 @@ class _Segment {
   _Segment({required this.value, required this.color, required this.label});
 }
 
-// ─── Patient Dossier Card ───────────────────────────────────────
+// ─── Patient Dossier Card (Hero Section) ────────────────────────
 
 class _PatientDossierCard extends ConsumerStatefulWidget {
   const _PatientDossierCard();
 
   @override
-  ConsumerState<_PatientDossierCard> createState() => _PatientDossierCardState();
+  ConsumerState<_PatientDossierCard> createState() =>
+      _PatientDossierCardState();
 }
 
 class _PatientDossierCardState extends ConsumerState<_PatientDossierCard> {
@@ -778,26 +927,61 @@ class _PatientDossierCardState extends ConsumerState<_PatientDossierCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header/Search ───────────────────────────────────────────
+          // ── Gradient Header / Search ────────────────────────────────
           Container(
             padding: const EdgeInsets.all(AppSpacing.lg),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppColors.primary, AppColors.primaryDark],
+                colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
+              borderRadius:
+                  BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.folder_shared, color: Colors.white, size: 28),
-                    const SizedBox(width: 12),
-                    Text('الوصول السريع للأضابير', 
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(Icons.folder_shared,
+                          color: Colors.white, size: 28),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'الوصول السريع للأضابير',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold),
+                          ),
+                          const Text(
+                            'ابحث أو تصفح أحدث سجلات المرضى',
+                            style:
+                                TextStyle(color: Colors.white70, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => context.push('/patients'),
+                      icon: const Icon(Icons.open_in_new,
+                          size: 16, color: Colors.white),
+                      label: const Text('كل السجلات',
+                          style: TextStyle(color: Colors.white)),
+                    ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.lg),
@@ -810,19 +994,32 @@ class _PatientDossierCardState extends ConsumerState<_PatientDossierCard> {
                     }
                   },
                   decoration: InputDecoration(
-                    hintText: 'ابحث عن اسم مريض، رقم هاتف، أو كود الملف...',
-                    prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+                    hintText:
+                        'ابحث عن اسم مريض، رقم هاتف، أو كود الملف...',
+                    prefixIcon: const Icon(Icons.search,
+                        color: AppColors.primary),
                     suffixIcon: IconButton(
-                      icon: const Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
+                      icon: const Icon(Icons.arrow_forward_rounded,
+                          color: AppColors.primary),
                       onPressed: () {
                         if (_searchController.text.trim().isNotEmpty) {
-                          context.push('/patients?q=${_searchController.text}');
+                          context.push(
+                              '/patients?q=${_searchController.text}');
                         }
                       },
                     ),
                     fillColor: Colors.white,
                     filled: true,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none),
+                    enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none),
+                    focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: const BorderSide(
+                            color: Color(0xFF4F46E5), width: 2)),
                   ),
                 ),
               ],
@@ -835,17 +1032,12 @@ class _PatientDossierCardState extends ConsumerState<_PatientDossierCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('أحدث الملفات المسجلة', 
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-                    TextButton.icon(
-                      onPressed: () => context.push('/patients'),
-                      icon: const Icon(Icons.list_alt, size: 18),
-                      label: const Text('كل السجلات'),
-                    ),
-                  ],
+                Text(
+                  'أحدث الملفات المسجلة',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 SizedBox(
@@ -854,10 +1046,14 @@ class _PatientDossierCardState extends ConsumerState<_PatientDossierCard> {
                     loading: () => const LoadingView(),
                     error: (e, _) => Text('خطأ في التحميل: $e'),
                     data: (list) {
-                      if (list.isEmpty) return const EmptyState(title: 'لا يوجد سجلات', icon: Icons.person_search_outlined);
-                      
+                      if (list.isEmpty) {
+                        return const EmptyState(
+                            title: 'لا يوجد سجلات',
+                            icon: Icons.person_search_outlined);
+                      }
+
                       final recent = list.take(10).toList();
-                      
+
                       return ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: recent.length,
@@ -882,41 +1078,77 @@ class _DossierShortcut extends StatelessWidget {
   final Patient patient;
   const _DossierShortcut({required this.patient});
 
+  // Cycle through vivid avatar colors
+  static const _avatarGradients = [
+    [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+    [Color(0xFF0EA5E9), Color(0xFF06B6D4)],
+    [Color(0xFF10B981), Color(0xFF14B8A6)],
+    [Color(0xFFF59E0B), Color(0xFFEF4444)],
+    [Color(0xFFEC4899), Color(0xFF8B5CF6)],
+  ];
+
   @override
   Widget build(BuildContext context) {
+    final id = patient.id ?? 0;
+    final gradient = _avatarGradients[id % _avatarGradients.length];
     return GestureDetector(
-      onTap: () => context.push('/patients/${patient.id}'),
+      onTap: () => context.push('/patients/$id'),
       child: Container(
         width: 100,
         margin: const EdgeInsets.only(left: AppSpacing.md),
         child: Column(
           children: [
-            Container(
-              width: 70,
-              height: 70,
-              decoration: BoxDecoration(
-                color: AppColors.primarySurface,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(color: AppColors.primary.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
-                ],
-              ),
-              child: Center(
-                child: Text(patient.name[0], 
-                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.primary)),
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: gradient,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                        color: gradient.first.withValues(alpha: 0.35),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6)),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    patient.name.isNotEmpty ? patient.name[0] : '?',
+                    style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 8),
-            Text(patient.name, 
-              maxLines: 1, 
+            Text(
+              patient.name,
+              maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-            Text('#${patient.id}', 
-              style: const TextStyle(fontSize: 10, color: AppColors.textHint, fontWeight: FontWeight.bold)),
+              style: const TextStyle(
+                  fontWeight: FontWeight.w700, fontSize: 13),
+            ),
+            Text(
+              '#$id',
+              style: const TextStyle(
+                  fontSize: 10,
+                  color: AppColors.textHint,
+                  fontWeight: FontWeight.bold),
+            ),
           ],
         ),
       ),
-    ).animate().fadeIn(delay: 100.ms).scale(begin: const Offset(0.9, 0.9));
+    ).animate().fadeIn(delay: (80 * (id % 10)).ms).scale(
+        begin: const Offset(0.88, 0.88),
+        curve: Curves.easeOutBack);
   }
 }

@@ -10,11 +10,13 @@ class _NavItem {
   final IconData icon;
   final IconData activeIcon;
   final String route;
+  final Color? accentColor;
   const _NavItem({
     required this.label,
     required this.icon,
     required this.activeIcon,
     required this.route,
+    this.accentColor,
   });
 }
 
@@ -25,10 +27,11 @@ const _navItems = [
       activeIcon: Icons.dashboard,
       route: '/dashboard'),
   _NavItem(
-      label: 'المرضى',
-      icon: Icons.people_outline,
-      activeIcon: Icons.people,
-      route: '/patients'),
+      label: 'سجل المرضى',
+      icon: Icons.folder_shared_outlined,
+      activeIcon: Icons.folder_shared,
+      route: '/patients',
+      accentColor: Color(0xFF7C3AED)),
   _NavItem(
       label: 'الأطباء',
       icon: Icons.medical_services_outlined,
@@ -256,35 +259,62 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = item.accentColor ?? AppColors.primary;
     return Tooltip(
       message: expanded ? '' : item.label,
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
           decoration: BoxDecoration(
-            color: active ? AppColors.primary.withOpacity(0.08) : Colors.transparent,
+            gradient: active
+                ? LinearGradient(
+                    colors: [
+                      accent.withOpacity(0.14),
+                      accent.withOpacity(0.06),
+                    ],
+                    begin: Alignment.centerRight,
+                    end: Alignment.centerLeft,
+                  )
+                : null,
             borderRadius: BorderRadius.circular(10),
+            border: active
+                ? Border.all(color: accent.withOpacity(0.22), width: 1)
+                : null,
           ),
           child: Row(
             children: [
               Icon(
                 active ? item.activeIcon : item.icon,
                 size: 20,
-                color: active ? AppColors.primary : AppColors.textSecondary,
+                color: active ? accent : AppColors.textSecondary,
               ),
               if (expanded) ...[
                 const SizedBox(width: 12),
-                Text(
-                  item.label,
-                  style: TextStyle(
-                    color: active ? AppColors.primary : AppColors.textPrimary,
-                    fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                    fontSize: 14,
+                Expanded(
+                  child: Text(
+                    item.label,
+                    style: TextStyle(
+                      color: active ? accent : AppColors.textPrimary,
+                      fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
+                if (active)
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: accent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
               ],
             ],
           ),
