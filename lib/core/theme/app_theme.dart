@@ -7,15 +7,15 @@ class AppColors {
   AppColors._();
 
   // ── Primary palette ──────────────────────────────────────────
-  static const primary = Color(0xFF1A6B8A); // deep teal
-  static const primaryLight = Color(0xFF2E8FAD);
-  static const primaryDark = Color(0xFF0D4F68);
-  static const primarySurface = Color(0xFFE8F4F8);
+  static const primary = Color(0xFF10B981); // emerald green
+  static const primaryLight = Color(0xFF34D399);
+  static const primaryDark = Color(0xFF059669);
+  static const primarySurface = Color(0xFFECFDF5);
 
   // ── Secondary ────────────────────────────────────────────────
-  static const secondary = Color(0xFF2CB67D); // emerald green
-  static const secondaryLight = Color(0xFF3DD68C);
-  static const secondarySurface = Color(0xFFE6F9F1);
+  static const secondary = Color(0xFF1A6B8A); // secondary teal
+  static const secondaryLight = Color(0xFF2E8FAD);
+  static const secondarySurface = Color(0xFFE8F4F8);
 
   // ── Semantic ─────────────────────────────────────────────────
   static const error = Color(0xFFE53935);

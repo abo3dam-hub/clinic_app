@@ -3,10 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/providers/service_providers.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../shared/widgets/app_widgets.dart';
-import '../../domain/entities/patient.dart';
+import 'package:clinic_app/core/providers/service_providers.dart';
+import 'package:clinic_app/core/theme/app_theme.dart';
+import 'package:clinic_app/shared/widgets/app_widgets.dart';
+import 'package:clinic_app/features/patients/domain/entities/patient.dart';
 
 class PatientsScreen extends ConsumerStatefulWidget {
   const PatientsScreen({super.key});
@@ -151,9 +151,15 @@ class _PatientsTable extends StatelessWidget {
         headers: const ['الاسم', 'الهاتف', 'الجنس', 'تاريخ الميلاد', 'الحالة', 'إجراءات'],
         rows: patients
             .map((p) => [
-                  Text(p.name,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600, color: AppColors.primary)),
+                  InkWell(
+                    onTap: () => context.push('/patients/${p.id}'),
+                    child: Text(p.name,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w900, 
+                            color: AppColors.primary,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppColors.primaryLight)),
+                  ),
                   Text(p.phone ?? '-',
                       style: const TextStyle(color: AppColors.textSecondary)),
                   Text(_genderLabel(p.gender),
