@@ -38,7 +38,7 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> with 
     final profileAsync = ref.watch(patientProfileProvider(widget.patientId));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.surface,
       body: profileAsync.when(
         loading: () => const LoadingView(),
         error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.refresh(patientProfileProvider(widget.patientId))),
@@ -155,7 +155,7 @@ class _ProfileHeader extends StatelessWidget {
               children: [
                 Text('الرصيد المتبقي', 
                   style: TextStyle(color: profile.outstandingBalance > 0 ? AppColors.error : AppColors.success, fontSize: 12, fontWeight: FontWeight.bold)),
-                Text('${fmt.format(profile.outstandingBalance)} $', 
+                Text('${fmt.format(profile.outstandingBalance)} \$', 
                   style: TextStyle(
                     color: profile.outstandingBalance > 0 ? AppColors.error : AppColors.success, 
                     fontSize: 20, 
@@ -312,12 +312,12 @@ class _FinancialsTab extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           AppTable(
             headers: const ['التاريخ', 'رقم الفاتورة', 'المبلغ الإجمالي', 'المدفوع', 'المتبقي', 'الحالة'],
-            rows: profile.invoices.map((inv) => [
+            rows: profile.invoices.map<List<Widget>>((inv) => [
               Text(inv.invoiceDate),
               Text('#${inv.id}'),
-              Text('${fmt.format(inv.netAmount)} $'),
-              Text('${fmt.format(inv.paidAmount)} $'),
-              Text('${fmt.format(inv.netAmount - inv.paidAmount)} $', style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text('${fmt.format(inv.netAmount)} \$'),
+              Text('${fmt.format(inv.paidAmount)} \$'),
+              Text('${fmt.format(inv.netAmount - inv.paidAmount)} \$', style: const TextStyle(fontWeight: FontWeight.bold)),
               InvoiceStatusChip(status: inv.status.value),
             ]).toList(),
           ),
@@ -326,10 +326,10 @@ class _FinancialsTab extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           AppTable(
             headers: const ['التاريخ', 'رقم الفاتورة', 'المبلغ', 'طريقة الدفع', 'ملاحظات'],
-            rows: profile.payments.map((p) => [
+            rows: profile.payments.map<List<Widget>>((p) => [
               Text(p.paymentDate),
               Text('#${p.invoiceId}'),
-              Text('${fmt.format(p.amount)} $', style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.bold)),
+              Text('${fmt.format(p.amount)} \$', style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.bold)),
               Text(p.method.value == 'cash' ? 'نقدي' : p.method.value == 'card' ? 'بطاقة' : 'تحويل'),
               Text(p.notes ?? '-'),
             ]).toList(),
@@ -429,7 +429,7 @@ class _VisitExpandableCardState extends State<_VisitExpandableCard> {
                               const Icon(Icons.check_circle_outline, size: 14, color: AppColors.success),
                               const SizedBox(width: 8),
                               Expanded(child: Text(p.procedureName ?? 'إجراء غير معروف', style: const TextStyle(fontSize: 14))),
-                              Text('${p.unitPrice} $', style: const TextStyle(fontWeight: FontWeight.bold)),
+                              Text('${p.unitPrice} \$', style: const TextStyle(fontWeight: FontWeight.bold)),
                             ],
                           ),
                         );
@@ -530,7 +530,7 @@ class _FinancialCard extends StatelessWidget {
         children: [
           Text(title, style: const TextStyle(color: AppColors.textHint, fontSize: 13, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
-          Text('${fmt.format(value)} $', style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.w900)),
+          Text('${fmt.format(value)} \$', style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.w900)),
         ],
       ),
     );

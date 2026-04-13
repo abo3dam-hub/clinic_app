@@ -1,6 +1,6 @@
 // lib/features/patients/domain/entities/patient.dart
-import '../../visits/domain/entities/visit_entities.dart';
-import '../../invoices/domain/entities/invoice.dart';
+import '../../../visits/domain/entities/visit_entities.dart';
+import '../../../invoices/domain/entities/invoice.dart';
 
 class Patient {
   final int? id;
