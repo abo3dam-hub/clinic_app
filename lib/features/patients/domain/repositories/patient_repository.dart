@@ -9,4 +9,8 @@ abstract class PatientRepository {
   Future<int> create(Patient patient);
   Future<void> update(Patient patient);
   Future<void> delete(int id);
+
+  // New methods for Dashboard and Profile
+  Future<List<PatientBalance>> getPatientsWithBalances();
+  Future<PatientProfile?> getPatientProfile(int id);
 }

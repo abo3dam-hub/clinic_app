@@ -94,6 +94,14 @@ class PatientNotifier extends AsyncNotifier<List<Patient>> {
 final patientNotifierProvider =
     AsyncNotifierProvider<PatientNotifier, List<Patient>>(PatientNotifier.new);
 
+final pendingBalancesProvider = FutureProvider<List<PatientBalance>>((ref) {
+  return ref.watch(patientRepositoryProvider).getPatientsWithBalances();
+});
+
+final patientProfileProvider = FutureProvider.family<PatientProfile?, int>((ref, id) {
+  return ref.watch(patientRepositoryProvider).getPatientProfile(id);
+});
+
 // ─── Doctors ──────────────────────────────────────────────────────────────────
 
 class DoctorNotifier extends AsyncNotifier<List<Doctor>> {

@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../domain/entities/patient.dart';
 import '../../domain/repositories/patient_repository.dart';
+import '../../../visits/domain/entities/visit_entities.dart';
+import '../../../invoices/domain/entities/invoice.dart';
 
 class PatientRepositoryImpl implements PatientRepository {
   final DatabaseHelper _db;
@@ -134,6 +136,141 @@ class PatientRepositoryImpl implements PatientRepository {
       oldValues: old != null ? _toMap(old) : null,
     );
   }
+
+  // ── New Methods ──────────────────────────────────────────────
+
+  @override
+  Future<List<PatientBalance>> getPatientsWithBalances() async {
+    final rows = await _db.rawQuery('''
+      SELECT 
+        p.id, 
+        p.name, 
+        (SELECT COALESCE(SUM(net_amount), 0) FROM invoices WHERE patient_id = p.id AND status != 'cancelled') - 
+        (SELECT COALESCE(SUM(amount), 0) FROM payments WHERE invoice_id IN (SELECT id FROM invoices WHERE patient_id = p.id AND status != 'cancelled')) as balance,
+        (SELECT MAX(created_at) FROM visits WHERE patient_id = p.id) as last_activity
+      FROM patients p
+      WHERE p.is_active = 1
+      GROUP BY p.id
+      HAVING balance > 0
+      ORDER BY balance DESC
+    ''');
+
+    return rows.map((r) => PatientBalance(
+      patientId: r['id'] as int,
+      patientName: r['name'] as String,
+      outstandingBalance: (r['balance'] as num).toDouble(),
+      lastActivityDate: r['last_activity'] != null ? DateTime.parse(r['last_activity'] as String) : null,
+    )).toList();
+  }
+
+  @override
+  Future<PatientProfile?> getPatientProfile(int id) async {
+    final patient = await getById(id);
+    if (patient == null) return null;
+
+    // 1. Fetch Visits
+    final visitRows = await _db.query(
+      'visits',
+      where: 'patient_id = ?',
+      whereArgs: [id],
+      orderBy: 'visit_date DESC',
+    );
+
+    final List<VisitWithProcedures> visitsWithProcedures = [];
+    for (final vRow in visitRows) {
+      final visit = _visitFromMap(vRow);
+      
+      // Fetch procedures for this visit
+      final procRows = await _db.rawQuery('''
+        SELECT vp.*, p.name as procedure_name
+        FROM visit_procedures vp
+        JOIN procedures p ON p.id = vp.procedure_id
+        WHERE vp.visit_id = ?
+      ''', [visit.id]);
+      
+      final procedures = procRows.map(_visitProcedureFromMap).toList();
+      visitsWithProcedures.add(VisitWithProcedures(visit: visit, procedures: procedures));
+    }
+
+    // 2. Fetch Invoices
+    final invoiceRows = await _db.query(
+      'invoices',
+      where: 'patient_id = ?',
+      whereArgs: [id],
+      orderBy: 'invoice_date DESC',
+    );
+    final invoices = invoiceRows.map(_invoiceFromMap).toList();
+
+    // 3. Fetch Payments (linked to patient's invoices)
+    final paymentRows = await _db.rawQuery('''
+      SELECT p.*
+      FROM payments p
+      JOIN invoices i ON i.id = p.invoice_id
+      WHERE i.patient_id = ?
+      ORDER BY p.payment_date DESC
+    ''', [id]);
+    final payments = paymentRows.map(_paymentFromMap).toList();
+
+    return PatientProfile(
+      patient: patient,
+      visits: visitsWithProcedures,
+      invoices: invoices,
+      payments: payments,
+    );
+  }
+
+  // ── Extra Mappings ───────────────────────────────────────────
+
+  Visit _visitFromMap(Map<String, dynamic> m) => Visit(
+        id: m['id'] as int,
+        patientId: m['patient_id'] as int,
+        doctorId: m['doctor_id'] as int,
+        appointmentId: m['appointment_id'] as int?,
+        visitDate: DateTime.parse(m['visit_date'] as String),
+        diagnosis: m['diagnosis'] as String?,
+        notes: m['notes'] as String?,
+        isLocked: (m['is_locked'] as int) == 1,
+        createdAt: DateTime.parse(m['created_at'] as String),
+        updatedAt: DateTime.parse(m['updated_at'] as String),
+      );
+
+  VisitProcedure _visitProcedureFromMap(Map<String, dynamic> m) => VisitProcedure(
+        id: m['id'] as int,
+        visitId: m['visit_id'] as int,
+        procedureId: m['procedure_id'] as int,
+        quantity: m['quantity'] as int,
+        unitPrice: (m['unit_price'] as num).toDouble(),
+        discount: (m['discount'] as num).toDouble(),
+        notes: m['notes'] as String?,
+        createdAt: DateTime.parse(m['created_at'] as String),
+        procedureName: m['procedure_name'] as String?,
+      );
+
+  Invoice _invoiceFromMap(Map<String, dynamic> m) => Invoice(
+        id: m['id'] as int,
+        visitId: m['visit_id'] as int?,
+        patientId: m['patient_id'] as int,
+        invoiceDate: m['invoice_date'] as String,
+        totalAmount: (m['total_amount'] as num).toDouble(),
+        discount: (m['discount'] as num).toDouble(),
+        netAmount: (m['net_amount'] as num).toDouble(),
+        paidAmount: (m['paid_amount'] as num).toDouble(),
+        status: InvoiceStatusX.fromString(m['status'] as String),
+        notes: m['notes'] as String?,
+        isLocked: (m['is_locked'] as int) == 1,
+        createdAt: DateTime.parse(m['created_at'] as String),
+        updatedAt: DateTime.parse(m['updated_at'] as String),
+      );
+
+  Payment _paymentFromMap(Map<String, dynamic> m) => Payment(
+        id: m['id'] as int,
+        invoiceId: m['invoice_id'] as int,
+        amount: (m['amount'] as num).toDouble(),
+        paymentDate: m['payment_date'] as String,
+        method: PaymentMethodX.fromString(m['method'] as String),
+        notes: m['notes'] as String?,
+        createdAt: DateTime.parse(m['created_at'] as String),
+      );
 
   // ── Validation ───────────────────────────────────────────────
 

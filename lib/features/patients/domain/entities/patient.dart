@@ -1,4 +1,6 @@
 // lib/features/patients/domain/entities/patient.dart
+import '../../visits/domain/entities/visit_entities.dart';
+import '../../invoices/domain/entities/invoice.dart';
 
 class Patient {
   final int? id;
@@ -60,4 +62,52 @@ class Patient {
 
   @override
   int get hashCode => id.hashCode;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Represents a summarized financial state of a patient.
+class PatientBalance {
+  final int patientId;
+  final String patientName;
+  final double outstandingBalance;
+  final DateTime? lastActivityDate;
+
+  const PatientBalance({
+    required this.patientId,
+    required this.patientName,
+    required this.outstandingBalance,
+    this.lastActivityDate,
+  });
+}
+
+/// A composite entity to hold a visit along with its procedures.
+/// Used for the "expand in-place" UI in the patient profile.
+class VisitWithProcedures {
+  final Visit visit;
+  final List<VisitProcedure> procedures;
+
+  const VisitWithProcedures({
+    required this.visit,
+    required this.procedures,
+  });
+}
+
+/// The full detailed profile record for a patient.
+class PatientProfile {
+  final Patient patient;
+  final List<VisitWithProcedures> visits;
+  final List<Invoice> invoices;
+  final List<Payment> payments;
+
+  const PatientProfile({
+    required this.patient,
+    required this.visits,
+    required this.invoices,
+    required this.payments,
+  });
+
+  double get totalInvoiced => invoices.fold(0.0, (sum, item) => sum + item.netAmount);
+  double get totalPaid => payments.fold(0.0, (sum, item) => sum + item.amount);
+  double get outstandingBalance => totalInvoiced - totalPaid;
 }

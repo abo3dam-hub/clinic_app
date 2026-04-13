@@ -6,6 +6,7 @@ import '../../shared/widgets/app_shell.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/patients/presentation/screens/patients_screen.dart';
 import '../../features/patients/presentation/screens/patient_form_screen.dart';
+import '../../features/patients/presentation/screens/patient_detail_screen.dart';
 import '../../features/doctors/presentation/screens/doctors_screen.dart';
 import '../../features/appointments/presentation/screens/appointments_screen.dart';
 import '../../features/visits/presentation/screens/visits_screen.dart';
@@ -38,6 +39,11 @@ final appRouter = GoRouter(
           builder: (_, __) => const PatientsScreen(),
           routes: [
             GoRoute(path: 'new', builder: (_, __) => const PatientFormScreen()),
+            GoRoute(
+              path: ':id',
+              builder: (_, state) => PatientDetailScreen(
+                  patientId: int.parse(state.pathParameters['id']!)),
+            ),
             GoRoute(
               path: ':id/edit',
               builder: (_, state) => PatientFormScreen(
