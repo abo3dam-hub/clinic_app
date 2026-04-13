@@ -7,27 +7,28 @@ import '../database/database_provider.dart';
 import '../services/backup_service.dart';
 import '../services/pdf_export_service.dart';
 import '../services/excel_export_service.dart';
-import 'repository_providers.dart';
-import '../../features/invoices/domain/services/invoice_service.dart';
-import '../../features/reports/domain/services/report_service.dart';
-import '../../features/doctors/domain/services/doctor_revenue_service.dart';
-import '../../features/cash_box/domain/services/cash_box_service.dart';
-import '../../features/patients/domain/entities/patient.dart';
-import '../../features/patients/domain/repositories/patient_repository.dart';
-import '../../features/doctors/domain/entities/doctor.dart';
-import '../../features/doctors/domain/repositories/doctor_repository.dart';
-import '../../features/appointments/domain/entities/appointment.dart';
-import '../../features/procedures/domain/entities/procedure.dart';
-import '../../features/procedures/data/repositories/procedure_repository_impl.dart';
-import '../../features/visits/domain/entities/visit.dart';
-import '../../features/invoices/domain/entities/invoice.dart';
-import '../../features/inventory/domain/entities/inventory.dart';
+import 'package:clinic_app/core/providers/repository_providers.dart';
+import 'package:clinic_app/features/invoices/domain/services/invoice_service.dart';
+import 'package:clinic_app/features/reports/domain/services/report_service.dart';
+import 'package:clinic_app/features/doctors/domain/services/doctor_revenue_service.dart';
+import 'package:clinic_app/features/cash_box/domain/services/cash_box_service.dart';
+import 'package:clinic_app/features/cash_box/domain/entities/cash_box.dart';
+import 'package:clinic_app/features/patients/domain/entities/patient.dart';
+import 'package:clinic_app/features/patients/domain/repositories/patient_repository.dart';
+import 'package:clinic_app/features/doctors/domain/entities/doctor.dart';
+import 'package:clinic_app/features/doctors/domain/repositories/doctor_repository.dart';
+import 'package:clinic_app/features/appointments/domain/entities/appointment.dart';
+import 'package:clinic_app/features/procedures/domain/entities/procedure.dart';
+import 'package:clinic_app/features/procedures/data/repositories/procedure_repository_impl.dart';
+import 'package:clinic_app/features/visits/domain/entities/visit.dart';
+import 'package:clinic_app/features/invoices/domain/entities/invoice.dart';
+import 'package:clinic_app/features/inventory/domain/entities/inventory.dart';
 // ── Accounting ────────────────────────────────────────────────────────────────
-import '../../features/accounting/domain/services/journal_service.dart';
-import '../../features/accounting/data/repositories/ledger_repository.dart';
+import 'package:clinic_app/features/accounting/domain/services/journal_service.dart';
+import 'package:clinic_app/features/accounting/data/repositories/ledger_repository.dart';
 // ── Repositories that depend on JournalService ────────────────────────────────
-import '../../features/invoices/data/repositories/invoice_repository_impl.dart';
-import '../../features/expenses/data/repositories/expense_repository_impl.dart';
+import 'package:clinic_app/features/invoices/data/repositories/invoice_repository_impl.dart';
+import 'package:clinic_app/features/expenses/data/repositories/expense_repository_impl.dart';
 
 // ─── Accounting services ──────────────────────────────────────────────────────
 

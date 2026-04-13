@@ -5,10 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/providers/service_providers.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/utils/date_utils.dart';
-import '../../../../shared/widgets/app_widgets.dart';
+import 'package:clinic_app/core/providers/service_providers.dart';
+import 'package:clinic_app/core/theme/app_theme.dart';
+import 'package:clinic_app/core/utils/date_utils.dart';
+import 'package:clinic_app/shared/widgets/app_widgets.dart';
+import 'package:clinic_app/features/cash_box/domain/entities/cash_box.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
