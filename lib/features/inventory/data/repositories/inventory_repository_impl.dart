@@ -1,7 +1,7 @@
 // lib/features/inventory/data/repositories/inventory_repository_impl.dart
 
-import '../../../../core/database/database_helper.dart';
-import '../../domain/entities/inventory.dart';
+import 'package:clinic_app/core/database/database_helper.dart';
+import 'package:clinic_app/features/inventory/domain/entities/inventory.dart';
 
 class InventoryRepositoryImpl {
   final DatabaseHelper _db;
