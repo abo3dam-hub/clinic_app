@@ -253,7 +253,7 @@ class _DossierSummarySheet extends StatelessWidget {
                   children: [
                     _MiniStat(label: 'إجمالي الزيارات', value: '${profile.visits.length}', color: AppColors.primary),
                     const Divider(height: 24),
-                    _MiniStat(label: 'الرصيد المفتوح', value: '${NumberFormat('#,##0').format(profile.outstandingBalance)} $', color: AppColors.error),
+                    _MiniStat(label: 'الرصيد المفتوح', value: '${NumberFormat('#,##0').format(profile.outstandingBalance)} \$', color: AppColors.error),
                   ],
                 ),
               ),
@@ -431,7 +431,7 @@ class _TimelineItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('فاتورة رقم #${inv.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text('بمبلغ إجمالي ${fmt.format(inv.netAmount)} $', style: const TextStyle(color: AppColors.textSecondary)),
+                Text('بمبلغ إجمالي ${fmt.format(inv.netAmount)} \$', style: const TextStyle(color: AppColors.textSecondary)),
               ],
             ),
           ),
@@ -449,7 +449,7 @@ class _TimelineItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('دفعة نقدية - ${p.method.name}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.success)),
-                Text('تم دفع مبلغ ${fmt.format(p.amount)} $', style: const TextStyle(color: AppColors.textSecondary)),
+                Text('تم دفع مبلغ ${fmt.format(p.amount)} \$', style: const TextStyle(color: AppColors.textSecondary)),
               ],
             ),
           ),

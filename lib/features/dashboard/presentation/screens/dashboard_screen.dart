@@ -10,6 +10,7 @@ import 'package:clinic_app/core/theme/app_theme.dart';
 import 'package:clinic_app/core/utils/date_utils.dart';
 import 'package:clinic_app/shared/widgets/app_widgets.dart';
 import 'package:clinic_app/features/cash_box/domain/entities/cash_box.dart';
+import 'package:clinic_app/features/patients/domain/entities/patient.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
