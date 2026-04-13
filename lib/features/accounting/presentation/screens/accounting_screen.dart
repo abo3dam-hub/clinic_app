@@ -8,8 +8,10 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart'; // Required for StateProvider in Riverpod 3.x
 import 'package:intl/intl.dart';
 
+import 'package:clinic_app/core/providers/repository_providers.dart';
 import '../../data/repositories/ledger_repository.dart';
 import '../../domain/services/journal_service.dart';
 import '../../../../core/providers/service_providers.dart';
