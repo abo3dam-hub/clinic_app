@@ -5,10 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../../../../core/providers/service_providers.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../shared/widgets/app_widgets.dart';
-import '../../domain/entities/patient.dart';
+import 'package:clinic_app/core/providers/service_providers.dart';
+import 'package:clinic_app/core/theme/app_theme.dart';
+import 'package:clinic_app/shared/widgets/app_widgets.dart';
+import 'package:clinic_app/features/patients/domain/entities/patient.dart';
+import 'package:clinic_app/features/invoices/domain/entities/invoice.dart';
 
 class PatientDetailScreen extends ConsumerStatefulWidget {
   final int patientId;
@@ -318,7 +319,7 @@ class _FinancialsTab extends StatelessWidget {
               Text('${fmt.format(inv.netAmount)} \$'),
               Text('${fmt.format(inv.paidAmount)} \$'),
               Text('${fmt.format(inv.netAmount - inv.paidAmount)} \$', style: const TextStyle(fontWeight: FontWeight.bold)),
-              InvoiceStatusChip(status: inv.status.value),
+              InvoiceStatusChip(status: inv.status.name),
             ]).toList(),
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -330,7 +331,7 @@ class _FinancialsTab extends StatelessWidget {
               Text(p.paymentDate),
               Text('#${p.invoiceId}'),
               Text('${fmt.format(p.amount)} \$', style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.bold)),
-              Text(p.method.value == 'cash' ? 'نقدي' : p.method.value == 'card' ? 'بطاقة' : 'تحويل'),
+               Text(p.method.name == 'cash' ? 'نقدي' : p.method.name == 'card' ? 'بطاقة' : 'تحويل'),
               Text(p.notes ?? '-'),
             ]).toList(),
           ),

@@ -2,10 +2,10 @@
 
 import 'package:flutter/foundation.dart';
 import '../../../../core/database/database_helper.dart';
-import '../../../domain/entities/patient.dart';
-import '../../../domain/repositories/patient_repository.dart';
-import '../../../../visits/domain/entities/visit_entities.dart';
-import '../../../../invoices/domain/entities/invoice.dart';
+import 'package:clinic_app/features/patients/domain/entities/patient.dart';
+import 'package:clinic_app/features/patients/domain/repositories/patient_repository.dart';
+import 'package:clinic_app/features/visits/domain/entities/visit_entities.dart';
+import 'package:clinic_app/features/invoices/domain/entities/invoice.dart';
 
 class PatientRepositoryImpl implements PatientRepository {
   final DatabaseHelper _db;

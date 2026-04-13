@@ -2,19 +2,21 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../database/database_provider.dart';
+import 'package:clinic_app/core/database/database_helper.dart';
+import 'package:clinic_app/core/database/database_provider.dart';
 
-import '../../features/patients/data/repositories/patient_repository_impl.dart';
-import '../../features/patients/domain/repositories/patient_repository.dart';
-import '../../features/doctors/data/repositories/doctor_repository_impl.dart';
-import '../../features/doctors/domain/repositories/doctor_repository.dart';
-import '../../features/appointments/data/repositories/appointment_repository_impl.dart';
-import '../../features/procedures/data/repositories/procedure_repository_impl.dart';
-import '../../features/visits/data/repositories/visit_repository_impl.dart';
-import '../../features/invoices/data/repositories/invoice_repository_impl.dart';
-import '../../features/expenses/data/repositories/expense_repository_impl.dart';
-import '../../features/inventory/data/repositories/inventory_repository_impl.dart';
-import '../../features/accounting/data/repositories/ledger_repository.dart';
+import 'package:clinic_app/features/patients/data/repositories/patient_repository_impl.dart';
+import 'package:clinic_app/features/patients/domain/repositories/patient_repository.dart';
+import 'package:clinic_app/features/doctors/data/repositories/doctor_repository_impl.dart';
+import 'package:clinic_app/features/doctors/domain/repositories/doctor_repository.dart';
+import 'package:clinic_app/features/appointments/data/repositories/appointment_repository_impl.dart';
+import 'package:clinic_app/features/procedures/data/repositories/procedure_repository_impl.dart';
+import 'package:clinic_app/features/visits/data/repositories/visit_repository_impl.dart';
+import 'package:clinic_app/features/invoices/data/repositories/invoice_repository_impl.dart';
+import 'package:clinic_app/features/expenses/data/repositories/expense_repository_impl.dart';
+import 'package:clinic_app/features/inventory/data/repositories/inventory_repository_impl.dart';
+import 'package:clinic_app/features/accounting/data/repositories/ledger_repository.dart';
+import 'package:clinic_app/features/cash_box/data/repositories/cash_box_repository_impl.dart';
 
 // ─── Core repositories ─────────────────────────────────────────────────────
 

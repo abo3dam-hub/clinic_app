@@ -1,6 +1,6 @@
 // lib/features/patients/domain/repositories/patient_repository.dart
 
-import './../entities/patient.dart';
+import 'package:clinic_app/features/patients/domain/entities/patient.dart';
 
 abstract class PatientRepository {
   Future<List<Patient>> getAll({bool activeOnly = true});
