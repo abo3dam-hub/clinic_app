@@ -69,7 +69,8 @@ class DashboardScreen extends ConsumerWidget {
                               data: (report) => _StatsGrid(report: report),
                             ),
                             const SizedBox(height: AppSpacing.xl),
-                            _PendingPatientsWidget(balancesAsync: pendingBalances),
+                            _PendingPatientsWidget(
+                                balancesAsync: pendingBalances),
                           ],
                         ),
                       ),
@@ -77,34 +78,31 @@ class DashboardScreen extends ConsumerWidget {
                       // Secondary Content (Right Sidebar)
                       Expanded(
                         flex: 1,
-                        child: SingleChildScrollView(
-                          physics: const NeverScrollableScrollPhysics(),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _AppointmentsCard(apptCounts: apptCounts),
-                              const SizedBox(height: AppSpacing.lg),
-                              _LowStockCard(lowStockAsync: lowStock),
-                              const SizedBox(height: AppSpacing.lg),
-                              daily.when(
-                                loading: () => const SizedBox(
-                                    height: 100, child: LoadingView()),
-                                error: (_, __) => const SizedBox.shrink(),
-                                data: (report) => _CashBoxCard(
-                                    cashBoxAsync: cashBox, report: report),
-                              ),
-                              const SizedBox(height: AppSpacing.lg),
-                              daily.when(
-                                loading: () => const SizedBox(
-                                    height: 100, child: LoadingView()),
-                                error: (_, __) => const SizedBox.shrink(),
-                                data: (report) =>
-                                    _DoctorStatsCard(report: report),
-                              ),
-                              const SizedBox(height: AppSpacing.xl),
-                            ],
-                          ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _AppointmentsCard(apptCounts: apptCounts),
+                            const SizedBox(height: AppSpacing.lg),
+                            _LowStockCard(lowStockAsync: lowStock),
+                            const SizedBox(height: AppSpacing.lg),
+                            daily.when(
+                              loading: () => const SizedBox(
+                                  height: 100, child: LoadingView()),
+                              error: (_, __) => const SizedBox.shrink(),
+                              data: (report) => _CashBoxCard(
+                                  cashBoxAsync: cashBox, report: report),
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                            daily.when(
+                              loading: () => const SizedBox(
+                                  height: 100, child: LoadingView()),
+                              error: (_, __) => const SizedBox.shrink(),
+                              data: (report) =>
+                                  _DoctorStatsCard(report: report),
+                            ),
+                            const SizedBox(height: AppSpacing.xl),
+                          ],
                         ),
                       ),
                     ],
@@ -152,11 +150,14 @@ class _Greeting extends StatelessWidget {
   Widget build(BuildContext context) {
     final hour = DateTime.now().hour;
     final greet = hour < 12
-        ? 'صباح الخير دكتور'
+        ? 'صباح الخير '
         : hour < 17
-            ? 'مساء الخير دكتور'
-            : 'طاب مساؤك دكتور';
-    final fmt = DateFormat('EEEE، d MMMM yyyy', 'ar');
+            ? 'مساء الخير '
+            : '  مساء الخير ';
+    final todayLabel = ClinicDateUtils.formatArabicMonth(
+      DateTime.now(),
+      'EEEE، d MMMM yyyy',
+    );
 
     return Row(
       children: [
@@ -197,13 +198,13 @@ class _Greeting extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppColors.primarySurface,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: AppColors.primary.withOpacity(0.2)),
+                          color: AppColors.primary.withValues(alpha: 0.2)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -212,14 +213,12 @@ class _Greeting extends StatelessWidget {
                             size: 16, color: AppColors.primary),
                         const SizedBox(width: 10),
                         Text(
-                          fmt.format(DateTime.now()),
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w800,
-                              ),
+                          todayLabel,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w800,
+                                  ),
                         ),
                       ],
                     ),
@@ -244,8 +243,7 @@ class _RealTimeClock extends StatelessWidget {
       stream: Stream.periodic(const Duration(seconds: 1)),
       builder: (context, snapshot) {
         return Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -376,8 +374,7 @@ class _InteractiveStatCardState extends State<_InteractiveStatCard> {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: baseColor
-                    .withOpacity(_isHovered ? 0.45 : 0.25),
+                color: baseColor.withValues(alpha: _isHovered ? 0.45 : 0.25),
                 blurRadius: _isHovered ? 28 : 14,
                 spreadRadius: _isHovered ? 2 : 0,
                 offset: const Offset(0, 10),
@@ -394,11 +391,10 @@ class _InteractiveStatCardState extends State<_InteractiveStatCard> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Icon(widget.icon,
-                        color: Colors.white, size: 26),
+                    child: Icon(widget.icon, color: Colors.white, size: 26),
                   ),
                   if (_isHovered)
                     const Icon(Icons.arrow_forward_ios,
@@ -492,8 +488,7 @@ class _PendingPatientsWidget extends StatelessWidget {
           ),
           const Divider(height: 1),
           balancesAsync.when(
-            loading: () =>
-                const SizedBox(height: 200, child: LoadingView()),
+            loading: () => const SizedBox(height: 200, child: LoadingView()),
             error: (e, _) => Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: ErrorView(message: e.toString()),
@@ -552,7 +547,10 @@ class _PendingPatientsWidget extends StatelessWidget {
                       ],
                     ),
                     onTap: () => context.push('/patients/${item.patientId}'),
-                  ).animate().fadeIn(delay: (100 * index).ms).slideX(begin: 0.05);
+                  )
+                      .animate()
+                      .fadeIn(delay: (100 * index).ms)
+                      .slideX(begin: 0.05);
                 },
               );
             },
@@ -666,8 +664,8 @@ class _CompactApptRow extends StatelessWidget {
                     fontSize: 13, color: AppColors.textSecondary)),
             const Spacer(),
             Text('$count',
-                style: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.bold)),
+                style:
+                    const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
           ],
         ),
       );
@@ -699,8 +697,7 @@ class _LowStockCard extends StatelessWidget {
               final list = items as List;
               if (list.isEmpty) {
                 return const Text('لا يوجد نواقص حالياً',
-                    style:
-                        TextStyle(color: AppColors.success, fontSize: 13));
+                    style: TextStyle(color: AppColors.success, fontSize: 13));
               }
               return Column(
                 children: [
@@ -766,8 +763,10 @@ class _CashBoxCard extends StatelessWidget {
             error: (e, _) => ErrorView(message: e.toString()),
             data: (box) => Column(
               children: [
-                _CashDetailRow('الرصيد الحالي',
-                    fmt.format(box.calculatedClosingBalance), AppColors.primary),
+                _CashDetailRow(
+                    'الرصيد الحالي',
+                    fmt.format(box.calculatedClosingBalance),
+                    AppColors.primary),
                 const SizedBox(height: AppSpacing.md),
                 SizedBox(
                   width: double.infinity,
@@ -798,8 +797,7 @@ class _CashDetailRow extends StatelessWidget {
         children: [
           Text(label,
               style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600)),
+                  color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
           Text('$value \$',
               style: TextStyle(
                   color: color, fontWeight: FontWeight.w900, fontSize: 18)),
@@ -821,13 +819,10 @@ class _DoctorStatsCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
           if (report.doctorStats.isEmpty)
             const EmptyState(
-                title: 'لا يوجد بيانات',
-                icon: Icons.medical_services_outlined)
+                title: 'لا يوجد بيانات', icon: Icons.medical_services_outlined)
           else
-            ...report.doctorStats
-                .take(2)
-                .map((s) => _SimpleDoctorRow(
-                    name: s.doctorName, visits: s.visits)),
+            ...report.doctorStats.take(2).map(
+                (s) => _SimpleDoctorRow(name: s.doctorName, visits: s.visits)),
           const SizedBox(height: AppSpacing.md),
           SizedBox(
             width: double.infinity,
@@ -853,8 +848,7 @@ class _SimpleDoctorRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           children: [
-            const Icon(Icons.person_pin,
-                size: 16, color: AppColors.textHint),
+            const Icon(Icons.person_pin, size: 16, color: AppColors.textHint),
             const SizedBox(width: 8),
             Expanded(
                 child: Text(name,
@@ -882,8 +876,7 @@ class _SegmentBar extends StatelessWidget {
       height: 8,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(4),
-          color: AppColors.borderLight),
+          borderRadius: BorderRadius.circular(4), color: AppColors.borderLight),
       child: Row(
         children: segments.map((s) {
           if (s.value == 0) return const SizedBox.shrink();
@@ -952,7 +945,7 @@ class _PatientDossierCardState extends ConsumerState<_PatientDossierCard> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Icon(Icons.folder_shared,
@@ -999,17 +992,15 @@ class _PatientDossierCardState extends ConsumerState<_PatientDossierCard> {
                     }
                   },
                   decoration: InputDecoration(
-                    hintText:
-                        'ابحث عن اسم مريض، رقم هاتف، أو كود الملف...',
-                    prefixIcon: const Icon(Icons.search,
-                        color: AppColors.primary),
+                    hintText: 'ابحث عن اسم مريض، رقم هاتف، أو كود الملف...',
+                    prefixIcon:
+                        const Icon(Icons.search, color: AppColors.primary),
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.arrow_forward_rounded,
                           color: AppColors.primary),
                       onPressed: () {
                         if (_searchController.text.trim().isNotEmpty) {
-                          context.push(
-                              '/patients?q=${_searchController.text}');
+                          context.push('/patients?q=${_searchController.text}');
                         }
                       },
                     ),
@@ -1139,8 +1130,7 @@ class _DossierShortcut extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                  fontWeight: FontWeight.w700, fontSize: 13),
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
             ),
             Text(
               '#$id',
@@ -1152,8 +1142,9 @@ class _DossierShortcut extends StatelessWidget {
           ],
         ),
       ),
-    ).animate().fadeIn(delay: (80 * (id % 10)).ms).scale(
-        begin: const Offset(0.88, 0.88),
-        curve: Curves.easeOutBack);
+    )
+        .animate()
+        .fadeIn(delay: (80 * (id % 10)).ms)
+        .scale(begin: const Offset(0.88, 0.88), curve: Curves.easeOutBack);
   }
 }

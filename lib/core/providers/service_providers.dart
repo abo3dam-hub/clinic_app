@@ -1,6 +1,5 @@
 // lib/core/providers/service_providers.dart
 
-import 'package:clinic_app/core/utils/date_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import '../database/database_provider.dart';
@@ -25,7 +24,6 @@ import 'package:clinic_app/features/invoices/domain/entities/invoice.dart';
 import 'package:clinic_app/features/inventory/domain/entities/inventory.dart';
 // ── Accounting ────────────────────────────────────────────────────────────────
 import 'package:clinic_app/features/accounting/domain/services/journal_service.dart';
-import 'package:clinic_app/features/accounting/data/repositories/ledger_repository.dart';
 // ── Repositories that depend on JournalService ────────────────────────────────
 import 'package:clinic_app/features/invoices/data/repositories/invoice_repository_impl.dart';
 import 'package:clinic_app/features/expenses/data/repositories/expense_repository_impl.dart';
@@ -39,14 +37,14 @@ final journalServiceProvider = Provider<JournalService>(
 // These are declared here (not in repository_providers.dart) to avoid a
 // circular import: repo_providers → service_providers → repo_providers.
 
-final invoiceRepositoryProvider = Provider<InvoiceRepositoryImpl>(
-    (ref) => InvoiceRepositoryImpl(
+final invoiceRepositoryProvider =
+    Provider<InvoiceRepositoryImpl>((ref) => InvoiceRepositoryImpl(
           ref.watch(databaseHelperProvider),
           ref.watch(journalServiceProvider),
         ));
 
-final expenseRepositoryProvider = Provider<ExpenseRepositoryImpl>(
-    (ref) => ExpenseRepositoryImpl(
+final expenseRepositoryProvider =
+    Provider<ExpenseRepositoryImpl>((ref) => ExpenseRepositoryImpl(
           ref.watch(databaseHelperProvider),
           ref.watch(journalServiceProvider),
         ));
@@ -84,12 +82,25 @@ class PatientNotifier extends AsyncNotifier<List<Patient>> {
   Future<void> refresh() async {
     state = await AsyncValue.guard(() => _r.getAll());
   }
+
   Future<void> search(String q) async {
     state = await AsyncValue.guard(() => _r.search(q));
   }
-  Future<void> create(Patient p) async { await _r.create(p); await refresh(); }
-  Future<void> updatePatient(Patient p) async { await _r.update(p); await refresh(); }
-  Future<void> delete(int id) async { await _r.delete(id); await refresh(); }
+
+  Future<void> create(Patient p) async {
+    await _r.create(p);
+    await refresh();
+  }
+
+  Future<void> updatePatient(Patient p) async {
+    await _r.update(p);
+    await refresh();
+  }
+
+  Future<void> delete(int id) async {
+    await _r.delete(id);
+    await refresh();
+  }
 }
 
 final patientNotifierProvider =
@@ -99,7 +110,8 @@ final pendingBalancesProvider = FutureProvider<List<PatientBalance>>((ref) {
   return ref.watch(patientRepositoryProvider).getPatientsWithBalances();
 });
 
-final patientProfileProvider = FutureProvider.family<PatientProfile?, int>((ref, id) {
+final patientProfileProvider =
+    FutureProvider.family<PatientProfile?, int>((ref, id) {
   return ref.watch(patientRepositoryProvider).getPatientProfile(id);
 });
 
@@ -112,9 +124,21 @@ class DoctorNotifier extends AsyncNotifier<List<Doctor>> {
   Future<void> refresh() async {
     state = await AsyncValue.guard(() => _r.getAll());
   }
-  Future<void> create(Doctor d) async { await _r.create(d); await refresh(); }
-  Future<void> updateDoctor(Doctor d) async { await _r.update(d); await refresh(); }
-  Future<void> delete(int id) async { await _r.delete(id); await refresh(); }
+
+  Future<void> create(Doctor d) async {
+    await _r.create(d);
+    await refresh();
+  }
+
+  Future<void> updateDoctor(Doctor d) async {
+    await _r.update(d);
+    await refresh();
+  }
+
+  Future<void> delete(int id) async {
+    await _r.delete(id);
+    await refresh();
+  }
 }
 
 final doctorNotifierProvider =
@@ -158,12 +182,26 @@ class ProcedureNotifier extends AsyncNotifier<List<Procedure>> {
   Future<void> refresh() async {
     state = await AsyncValue.guard(() => _r.getAll());
   }
+
   Future<void> search(String q) async {
     state = await AsyncValue.guard(() => _r.search(q));
   }
-  Future<void> create(Procedure p) async { await _r.create(p); await refresh(); }
-  Future<void> updateProcedure(Procedure p) async { await _r.update(p); await refresh(); }
-  Future<void> delete(int id) async { await _r.delete(id); await refresh(); }
+
+  Future<void> create(Procedure p) async {
+    await _r.create(p);
+    await refresh();
+  }
+
+  Future<void> updateProcedure(Procedure p) async {
+    await _r.update(p);
+    await refresh();
+  }
+
+  Future<void> delete(int id) async {
+    await _r.delete(id);
+    await refresh();
+  }
+
   Future<void> toggle(int id, bool a) async {
     await _r.toggleActive(id, active: a);
     await refresh();
@@ -181,7 +219,8 @@ class VisitFilter {
   final String? toDate;
   final int? patientId;
   final int? doctorId;
-  const VisitFilter({this.fromDate, this.toDate, this.patientId, this.doctorId});
+  const VisitFilter(
+      {this.fromDate, this.toDate, this.patientId, this.doctorId});
 }
 
 final visitFilterProvider =
@@ -208,7 +247,8 @@ class InvoiceFilter {
   final String? toDate;
   final String? status;
   final int? patientId;
-  const InvoiceFilter({this.fromDate, this.toDate, this.status, this.patientId});
+  const InvoiceFilter(
+      {this.fromDate, this.toDate, this.status, this.patientId});
 }
 
 final invoiceFilterProvider =
@@ -242,8 +282,8 @@ final inventoryItemsProvider = FutureProvider<List<InventoryItem>>(
 final lowStockProvider = FutureProvider<List<InventoryItem>>(
     (ref) => ref.watch(inventoryRepositoryProvider).getLowStockItems());
 
-final stockMovementsProvider =
-    FutureProvider.family<List<StockMovement>, int?>((ref, itemId) =>
+final stockMovementsProvider = FutureProvider.family<List<StockMovement>, int?>(
+    (ref, itemId) =>
         ref.watch(inventoryRepositoryProvider).getMovements(itemId: itemId));
 
 // ─── Reports ──────────────────────────────────────────────────────────────────
@@ -265,8 +305,7 @@ final reportPeriodProvider = Provider<ReportPeriod>((ref) {
   final m = now.month.toString().padLeft(2, '0');
   final last = DateTime(now.year, now.month + 1, 0).day;
   return ReportPeriod(
-      fromDate: '$y-$m-01',
-      toDate: '$y-$m-${last.toString().padLeft(2, '0')}');
+      fromDate: '$y-$m-01', toDate: '$y-$m-${last.toString().padLeft(2, '0')}');
 });
 
 final periodReportProvider = FutureProvider<PeriodReport>((ref) {

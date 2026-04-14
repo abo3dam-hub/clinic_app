@@ -14,7 +14,7 @@ import '../../../../core/providers/service_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../domain/entities/invoice.dart';
-import '../../../../core/providers/repository_providers.dart';
+
 import '../../../../core/utils/date_utils.dart';
 
 // ─── Currency helper — single source of truth ─────────────────────────────────
@@ -90,7 +90,8 @@ class InvoicesScreen extends ConsumerWidget {
                                         fontWeight: FontWeight.w600)),
                                 Text(_money(fmt, inv.paidAmount),
                                     style: const TextStyle(
-                                        color: AppColors.success, fontWeight: FontWeight.w600)),
+                                        color: AppColors.success,
+                                        fontWeight: FontWeight.w600)),
                                 Text(_money(fmt, inv.remainingAmount),
                                     style: TextStyle(
                                         fontWeight: FontWeight.w700,
@@ -101,12 +102,14 @@ class InvoicesScreen extends ConsumerWidget {
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    if (inv.status != InvoiceStatus.paid && !inv.isLocked)
+                                    if (inv.status != InvoiceStatus.paid &&
+                                        !inv.isLocked)
                                       IconActionButton(
                                         icon: Icons.add_card_outlined,
                                         tooltip: 'دفع سريع',
-                                        onPressed: () => _showQuickPaymentDialog(
-                                            context, ref, inv, fmt),
+                                        onPressed: () =>
+                                            _showQuickPaymentDialog(
+                                                context, ref, inv, fmt),
                                         color: AppColors.success,
                                         bgColor: AppColors.successSurface,
                                       ),
@@ -145,10 +148,9 @@ class _InvoiceFilters extends StatelessWidget {
         children: [
           Expanded(
             child: DropdownButtonFormField<String?>(
-              value: filter.status,
+              initialValue: filter.status,
               decoration: const InputDecoration(
-                  labelText: 'الحالة',
-                  prefixIcon: Icon(Icons.filter_list)),
+                  labelText: 'الحالة', prefixIcon: Icon(Icons.filter_list)),
               items: const [
                 DropdownMenuItem(value: null, child: Text('كل الحالات')),
                 DropdownMenuItem(value: 'unpaid', child: Text('غير مدفوعة')),
@@ -156,9 +158,7 @@ class _InvoiceFilters extends StatelessWidget {
                 DropdownMenuItem(value: 'paid', child: Text('مدفوعة')),
               ],
               onChanged: (v) => onFilterChanged(InvoiceFilter(
-                  status: v,
-                  fromDate: filter.fromDate,
-                  toDate: filter.toDate)),
+                  status: v, fromDate: filter.fromDate, toDate: filter.toDate)),
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -188,8 +188,7 @@ class _DateFilter extends StatelessWidget {
   final String? value;
   final void Function(String?) onChanged;
 
-  const _DateFilter(
-      {required this.label, this.value, required this.onChanged});
+  const _DateFilter({required this.label, this.value, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -255,8 +254,7 @@ class InvoiceDetailScreen extends ConsumerWidget {
                 InvoiceStatusChip(status: invoice.status.value),
                 if (invoice.isLocked) ...[
                   const SizedBox(width: 8),
-                  const StatusChip(
-                      label: 'مقفلة', color: AppColors.textHint),
+                  const StatusChip(label: 'مقفلة', color: AppColors.textHint),
                 ],
               ]),
               const SizedBox(height: AppSpacing.lg),
@@ -305,24 +303,30 @@ class InvoiceDetailScreen extends ConsumerWidget {
                                           .map((item) => [
                                                 Text(item.description),
                                                 Text('${item.quantity}'),
-                                                Text(_money(fmt, item.unitPrice)),
-                                                Text(_money(fmt, item.discount)),
+                                                Text(_money(
+                                                    fmt, item.unitPrice)),
+                                                Text(
+                                                    _money(fmt, item.discount)),
                                                 Text(_money(fmt, item.total),
                                                     style: const TextStyle(
-                                                        fontWeight: FontWeight.w700)),
+                                                        fontWeight:
+                                                            FontWeight.w700)),
                                               ])
                                           .toList(),
                                     ),
                             ),
                             const Divider(height: AppSpacing.lg),
-                            _TotalRow('الإجمالي', _money(fmt, invoice.totalAmount)),
+                            _TotalRow(
+                                'الإجمالي', _money(fmt, invoice.totalAmount)),
                             _TotalRow('الخصم', _money(fmt, invoice.discount),
                                 color: AppColors.warning),
                             _TotalRow('الصافي', _money(fmt, invoice.netAmount),
                                 bold: true),
-                            _TotalRow('المدفوع', _money(fmt, invoice.paidAmount),
+                            _TotalRow(
+                                'المدفوع', _money(fmt, invoice.paidAmount),
                                 color: AppColors.success),
-                            _TotalRow('المتبقي', _money(fmt, invoice.remainingAmount),
+                            _TotalRow(
+                                'المتبقي', _money(fmt, invoice.remainingAmount),
                                 color: invoice.remainingAmount > 0
                                     ? AppColors.error
                                     : AppColors.textHint,
@@ -343,13 +347,14 @@ class InvoiceDetailScreen extends ConsumerWidget {
                         children: [
                           SectionHeader(
                             title: 'المدفوعات',
-                            action: invoice.status != InvoiceStatus.paid && !invoice.isLocked
+                            action: invoice.status != InvoiceStatus.paid &&
+                                    !invoice.isLocked
                                 ? PrimaryButton(
                                     label: 'إضافة دفعة',
                                     icon: Icons.add,
                                     compact: true,
-                                    onPressed: () =>
-                                        _showQuickPaymentDialog(context, ref, invoice, fmt),
+                                    onPressed: () => _showQuickPaymentDialog(
+                                        context, ref, invoice, fmt),
                                   )
                                 : null,
                           ),
@@ -411,7 +416,8 @@ class InvoiceDetailScreen extends ConsumerWidget {
 
 // ─── Dialogs ──────────────────────────────────────────────────────────────────
 
-Future<void> _showManualInvoiceDialog(BuildContext context, WidgetRef ref) async {
+Future<void> _showManualInvoiceDialog(
+    BuildContext context, WidgetRef ref) async {
   int? selectedPatientId;
   final descCtrl = TextEditingController();
   final priceCtrl = TextEditingController();
@@ -437,7 +443,8 @@ Future<void> _showManualInvoiceDialog(BuildContext context, WidgetRef ref) async
                     required: true,
                     value: selectedPatientId,
                     items: patients
-                        .map((p) => DropdownMenuItem(value: p.id!, child: Text(p.name)))
+                        .map((p) =>
+                            DropdownMenuItem(value: p.id!, child: Text(p.name)))
                         .toList(),
                     onChanged: (v) => setSt(() => selectedPatientId = v),
                   ),
@@ -453,7 +460,8 @@ Future<void> _showManualInvoiceDialog(BuildContext context, WidgetRef ref) async
                   label: 'المبلغ (\$)',
                   required: true,
                   controller: priceCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
                 ),
                 const SizedBox(height: AppSpacing.md),
                 AppTextField(
@@ -466,7 +474,8 @@ Future<void> _showManualInvoiceDialog(BuildContext context, WidgetRef ref) async
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
           PrimaryButton(
             label: 'إصدار الفاتورة',
             onPressed: () async {
@@ -477,15 +486,18 @@ Future<void> _showManualInvoiceDialog(BuildContext context, WidgetRef ref) async
               Navigator.pop(ctx);
               try {
                 final now = DateTime.now();
-                final invoiceId = await ref.read(invoiceRepositoryProvider).create(Invoice(
-                      patientId: selectedPatientId!,
-                      invoiceDate: ClinicDateUtils.todayString(),
-                      totalAmount: price,
-                      netAmount: price,
-                      notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
-                      createdAt: now,
-                      updatedAt: now,
-                    ));
+                final invoiceId =
+                    await ref.read(invoiceRepositoryProvider).create(Invoice(
+                          patientId: selectedPatientId!,
+                          invoiceDate: ClinicDateUtils.todayString(),
+                          totalAmount: price,
+                          netAmount: price,
+                          notes: notesCtrl.text.trim().isEmpty
+                              ? null
+                              : notesCtrl.text.trim(),
+                          createdAt: now,
+                          updatedAt: now,
+                        ));
 
                 await ref.read(invoiceRepositoryProvider).addItem(InvoiceItem(
                       invoiceId: invoiceId,
@@ -496,7 +508,8 @@ Future<void> _showManualInvoiceDialog(BuildContext context, WidgetRef ref) async
                     ));
 
                 ref.invalidate(invoicesProvider);
-                ref.invalidate(dailyReportProvider(ClinicDateUtils.todayString()));
+                ref.invalidate(
+                    dailyReportProvider(ClinicDateUtils.todayString()));
 
                 if (context.mounted) {
                   showSnack(context, 'تم إصدار الفاتورة بنجاح');
@@ -515,7 +528,8 @@ Future<void> _showManualInvoiceDialog(BuildContext context, WidgetRef ref) async
 
 Future<void> _showQuickPaymentDialog(
     BuildContext context, WidgetRef ref, Invoice inv, NumberFormat fmt) async {
-  final amtCtrl = TextEditingController(text: inv.remainingAmount.toStringAsFixed(2));
+  final amtCtrl =
+      TextEditingController(text: inv.remainingAmount.toStringAsFixed(2));
   String method = 'cash';
 
   await showDialog(
@@ -527,13 +541,15 @@ Future<void> _showQuickPaymentDialog(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text('المبلغ المتبقي: \$${fmt.format(inv.remainingAmount)}',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.error)),
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold, color: AppColors.error)),
             const SizedBox(height: AppSpacing.md),
             AppTextField(
               label: 'مبلغ الدفع (\$)',
               required: true,
               controller: amtCtrl,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
             ),
             const SizedBox(height: AppSpacing.md),
             AppDropdown<String>(
@@ -549,7 +565,8 @@ Future<void> _showQuickPaymentDialog(
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
           PrimaryButton(
             label: 'تأكيد الدفع',
             onPressed: () async {
@@ -569,10 +586,12 @@ Future<void> _showQuickPaymentDialog(
 
                 ref.invalidate(invoicesProvider);
                 ref.invalidate(invoiceByIdProvider(inv.id!));
-                ref.invalidate(dailyReportProvider(ClinicDateUtils.todayString()));
+                ref.invalidate(
+                    dailyReportProvider(ClinicDateUtils.todayString()));
                 ref.invalidate(cashBoxTodayProvider);
 
-                if (context.mounted) showSnack(context, 'تم تسجيل الدفعة بنجاح');
+                if (context.mounted)
+                  showSnack(context, 'تم تسجيل الدفعة بنجاح');
               } catch (e) {
                 if (context.mounted) showSnack(context, 'خطأ: $e', error: true);
               }
@@ -598,7 +617,8 @@ class _InfoRow extends StatelessWidget {
           SizedBox(
               width: 100,
               child: Text(label,
-                  style: const TextStyle(color: AppColors.textHint, fontSize: 13))),
+                  style: const TextStyle(
+                      color: AppColors.textHint, fontSize: 13))),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
         ]),
       );
@@ -614,18 +634,17 @@ class _TotalRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(label,
-                  style: TextStyle(
-                      color: bold ? AppColors.textPrimary : AppColors.textSecondary,
-                      fontWeight: bold ? FontWeight.w700 : FontWeight.w400)),
-              Text(value,
-                  style: TextStyle(
-                      color: color ?? AppColors.textPrimary,
-                      fontWeight: bold ? FontWeight.w700 : FontWeight.w600)),
-            ]),
+        child:
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text(label,
+              style: TextStyle(
+                  color: bold ? AppColors.textPrimary : AppColors.textSecondary,
+                  fontWeight: bold ? FontWeight.w700 : FontWeight.w400)),
+          Text(value,
+              style: TextStyle(
+                  color: color ?? AppColors.textPrimary,
+                  fontWeight: bold ? FontWeight.w700 : FontWeight.w600)),
+        ]),
       );
 }
 
@@ -644,8 +663,10 @@ class _PaymentTile extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-                color: AppColors.successSurface, borderRadius: BorderRadius.circular(8)),
-            child: const Icon(Icons.payments_outlined, color: AppColors.success, size: 18),
+                color: AppColors.successSurface,
+                borderRadius: BorderRadius.circular(8)),
+            child: const Icon(Icons.payments_outlined,
+                color: AppColors.success, size: 18),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -653,9 +674,11 @@ class _PaymentTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(_money(fmt, payment.amount),
-                  style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.success)),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700, color: AppColors.success)),
               Text('${payment.paymentDate} · ${payment.method.label}',
-                  style: const TextStyle(color: AppColors.textHint, fontSize: 12)),
+                  style:
+                      const TextStyle(color: AppColors.textHint, fontSize: 12)),
             ],
           )),
           if (onDelete != null)

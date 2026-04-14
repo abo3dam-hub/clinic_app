@@ -31,7 +31,8 @@ class PrimaryButton extends StatelessWidget {
         ? const SizedBox(
             width: 18,
             height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            child:
+                CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
           )
         : icon != null
             ? Row(
@@ -100,7 +101,8 @@ class DangerButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final IconData? icon;
 
-  const DangerButton({super.key, required this.label, this.onPressed, this.icon});
+  const DangerButton(
+      {super.key, required this.label, this.onPressed, this.icon});
 
   @override
   Widget build(BuildContext context) => ElevatedButton(
@@ -113,7 +115,11 @@ class DangerButton extends StatelessWidget {
         child: icon != null
             ? Row(
                 mainAxisSize: MainAxisSize.min,
-                children: [Icon(icon, size: 18), const SizedBox(width: 8), Text(label)],
+                children: [
+                  Icon(icon, size: 18),
+                  const SizedBox(width: 8),
+                  Text(label)
+                ],
               )
             : Text(label),
       );
@@ -147,7 +153,8 @@ class IconActionButton extends StatelessWidget {
               color: bgColor ?? AppColors.borderLight,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 18, color: color ?? AppColors.textSecondary),
+            child:
+                Icon(icon, size: 18, color: color ?? AppColors.textSecondary),
           ),
         ),
       );
@@ -163,7 +170,8 @@ class AppCard extends StatelessWidget {
   final VoidCallback? onTap;
   final Color? color;
 
-  const AppCard({super.key, required this.child, this.padding, this.onTap, this.color});
+  const AppCard(
+      {super.key, required this.child, this.padding, this.onTap, this.color});
 
   @override
   Widget build(BuildContext context) => Container(
@@ -212,7 +220,7 @@ class StatCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 24),
@@ -229,10 +237,11 @@ class StatCard extends StatelessWidget {
                           ?.copyWith(color: AppColors.textHint)),
                   const SizedBox(height: 4),
                   Text(value,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w700,
-                          )),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                              )),
                   if (subtitle != null)
                     Text(subtitle!,
                         style: Theme.of(context)
@@ -295,7 +304,8 @@ class AppTextField extends StatelessWidget {
                       .labelLarge
                       ?.copyWith(fontSize: 13, color: AppColors.textSecondary)),
               if (required)
-                const Text(' *', style: TextStyle(color: AppColors.error, fontSize: 13)),
+                const Text(' *',
+                    style: TextStyle(color: AppColors.error, fontSize: 13)),
             ],
           ),
           const SizedBox(height: 6),
@@ -348,7 +358,8 @@ class AppDropdown<T> extends StatelessWidget {
                       .labelLarge
                       ?.copyWith(fontSize: 13, color: AppColors.textSecondary)),
               if (required)
-                const Text(' *', style: TextStyle(color: AppColors.error, fontSize: 13)),
+                const Text(' *',
+                    style: TextStyle(color: AppColors.error, fontSize: 13)),
             ],
           ),
           const SizedBox(height: 6),
@@ -402,7 +413,8 @@ class _AppDateFieldState extends State<AppDateField> {
   void didUpdateWidget(AppDateField oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Keep controller in sync when parent pushes a new value (edit mode)
-    if (oldWidget.value != widget.value && _controller.text != (widget.value ?? '')) {
+    if (oldWidget.value != widget.value &&
+        _controller.text != (widget.value ?? '')) {
       _controller.text = widget.value ?? '';
     }
   }
@@ -433,8 +445,7 @@ class _AppDateFieldState extends State<AppDateField> {
           locale: const Locale('ar'),
         );
         if (picked != null && mounted) {
-          final formatted =
-              '${picked.year.toString().padLeft(4, '0')}-'
+          final formatted = '${picked.year.toString().padLeft(4, '0')}-'
               '${picked.month.toString().padLeft(2, '0')}-'
               '${picked.day.toString().padLeft(2, '0')}';
           _controller.text = formatted;
@@ -459,11 +470,12 @@ class StatusChip extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(label,
-            style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+            style: TextStyle(
+                color: color, fontSize: 12, fontWeight: FontWeight.w600)),
       );
 }
 
@@ -510,7 +522,11 @@ class AppTable extends StatelessWidget {
   final List<List<Widget>> rows;
   final List<double>? columnWidths;
 
-  const AppTable({super.key, required this.headers, required this.rows, this.columnWidths});
+  const AppTable(
+      {super.key,
+      required this.headers,
+      required this.rows,
+      this.columnWidths});
 
   @override
   Widget build(BuildContext context) => Container(
@@ -525,7 +541,8 @@ class AppTable extends StatelessWidget {
             children: [
               Container(
                 color: AppColors.primarySurface,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: _buildRow(
                   headers
                       .map((h) => Text(h,
@@ -540,7 +557,8 @@ class AppTable extends StatelessWidget {
                 final isEven = entry.key.isEven;
                 return Container(
                   color: isEven ? Colors.transparent : AppColors.borderLight,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: _buildRow(entry.value),
                 );
               }),
@@ -559,9 +577,12 @@ class AppTable extends StatelessWidget {
 
   Widget _buildRow(List<Widget> cells) => Row(
         children: cells.asMap().entries.map((e) {
-          final width =
-              columnWidths != null && e.key < columnWidths!.length ? columnWidths![e.key] : null;
-          return width != null ? SizedBox(width: width, child: e.value) : Expanded(child: e.value);
+          final width = columnWidths != null && e.key < columnWidths!.length
+              ? columnWidths![e.key]
+              : null;
+          return width != null
+              ? SizedBox(width: width, child: e.value)
+              : Expanded(child: e.value);
         }).toList(),
       );
 }
@@ -645,7 +666,8 @@ class LoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const Padding(
         padding: EdgeInsets.all(AppSpacing.xl),
-        child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        child:
+            Center(child: CircularProgressIndicator(color: AppColors.primary)),
       );
 }
 

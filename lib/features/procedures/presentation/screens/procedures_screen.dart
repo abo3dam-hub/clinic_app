@@ -214,7 +214,8 @@ class _ProceduresScreenState extends ConsumerState<ProceduresScreen> {
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(innerCtx), child: const Text('إلغاء')),
+              onPressed: () => Navigator.pop(innerCtx),
+              child: const Text('إلغاء')),
           PrimaryButton(
             label: existing == null ? 'إضافة' : 'حفظ',
             onPressed: () async {
@@ -348,7 +349,7 @@ class _Badge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -358,7 +359,7 @@ class _Badge extends StatelessWidget {
           const SizedBox(width: 5),
           Text(label,
               style: TextStyle(
-                  color: color.withOpacity(0.8),
+                  color: color.withValues(alpha: 0.8),
                   fontSize: 12,
                   fontWeight: FontWeight.w500)),
         ]),

@@ -2,10 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:riverpod/src/providers/legacy/state_controller.dart';
-
-import '../../../../core/providers/service_providers.dart';
+import 'package:clinic_app/core/providers/service_providers.dart';
 import '../../../../core/providers/repository_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_utils.dart';
@@ -338,8 +336,7 @@ class _AppointmentsScreenState extends ConsumerState<AppointmentsScreen> {
   String _formatDate(String dateStr) {
     try {
       final dt = DateTime.parse(dateStr);
-      final fmt = DateFormat('EEEE، d MMMM yyyy', 'ar');
-      return fmt.format(dt);
+      return ClinicDateUtils.formatArabicMonth(dt, 'EEEE، d MMMM yyyy');
     } catch (_) {
       return dateStr;
     }
@@ -430,7 +427,7 @@ class _FilterChip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: selected ? c.withOpacity(0.12) : AppColors.borderLight,
+          color: selected ? c.withValues(alpha: 0.12) : AppColors.borderLight,
           borderRadius: BorderRadius.circular(20),
           border:
               Border.all(color: selected ? c : Colors.transparent, width: 1.5),
@@ -483,7 +480,7 @@ class _CountBadge extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -493,7 +490,7 @@ class _CountBadge extends StatelessWidget {
           const SizedBox(width: 6),
           Text(label,
               style: TextStyle(
-                  color: color.withOpacity(0.8),
+                  color: color.withValues(alpha: 0.8),
                   fontSize: 12,
                   fontWeight: FontWeight.w500)),
         ]),
@@ -699,7 +696,7 @@ class _QuickBtn extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Icon(icon, size: 16, color: color),

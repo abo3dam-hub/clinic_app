@@ -4,8 +4,6 @@ import 'package:clinic_app/core/providers/service_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-
-import '../../../../core/providers/repository_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../../../shared/widgets/app_widgets.dart';
@@ -279,7 +277,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                   }
                   ref.invalidate(_expensesProvider(_filter));
                   ref.invalidate(_categoriesProvider);
-                  final todayStr = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+                  final todayStr =
+                      '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
                   ref.invalidate(dailyReportProvider(todayStr));
                   ref.invalidate(cashBoxTodayProvider);
                 } catch (e) {
@@ -305,7 +304,8 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
         await ref.read(expenseRepositoryProvider).delete(expense.id!);
         ref.invalidate(_expensesProvider(_filter));
         final now = DateTime.now();
-        final todayStr = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+        final todayStr =
+            '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
         ref.invalidate(dailyReportProvider(todayStr));
         ref.invalidate(cashBoxTodayProvider);
         if (ctx.mounted) showSnack(ctx, 'تم الحذف');
@@ -353,7 +353,8 @@ class _FiltersRow extends StatelessWidget {
         const SizedBox(width: AppSpacing.md),
         Expanded(
           child: DropdownButtonFormField<String?>(
-            value: categories.contains(filter.category) ? filter.category : null,
+            initialValue:
+                categories.contains(filter.category) ? filter.category : null,
             decoration: const InputDecoration(
                 labelText: 'الفئة',
                 prefixIcon: Icon(Icons.category_outlined, size: 18)),
@@ -385,7 +386,7 @@ class _SummaryBar extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.errorSurface,
           borderRadius: AppRadius.card,
-          border: Border.all(color: AppColors.error.withOpacity(0.2)),
+          border: Border.all(color: AppColors.error.withValues(alpha: 0.2)),
         ),
         child: Row(children: [
           const Icon(Icons.payments_outlined, color: AppColors.error, size: 20),

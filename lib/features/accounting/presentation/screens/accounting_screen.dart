@@ -13,7 +13,6 @@ import 'package:intl/intl.dart';
 
 import 'package:clinic_app/core/providers/repository_providers.dart';
 import '../../data/repositories/ledger_repository.dart';
-import '../../domain/services/journal_service.dart';
 import '../../../../core/providers/service_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_utils.dart';
@@ -109,7 +108,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen>
           ),
         ),
         const SizedBox(height: AppSpacing.md),
-        
+
         // ── Export Toolbar ───────────────────────────────────────
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -144,7 +143,8 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen>
     );
   }
 
-  Future<void> _handleExport(BuildContext context, WidgetRef ref, {required bool isPdf}) async {
+  Future<void> _handleExport(BuildContext context, WidgetRef ref,
+      {required bool isPdf}) async {
     final period = ref.read(accountingPeriodProvider);
     final tabIndex = _tabs.index;
     final pdfService = ref.read(pdfExportServiceProvider);
@@ -159,28 +159,35 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen>
         // Trial Balance
         final data = await ref.read(trialBalanceProvider(period).future);
         name = 'ميزان_المراجعة_${_safeName(period.fromDate)}';
-        bytes = isPdf 
-          ? await pdfService.generateTrialBalancePdf(balances: data, fromDate: period.fromDate, toDate: period.toDate)
-          : await excelService.generateTrialBalanceExcel(balances: data, fromDate: period.fromDate, toDate: period.toDate);
+        bytes = isPdf
+            ? await pdfService.generateTrialBalancePdf(
+                balances: data,
+                fromDate: period.fromDate,
+                toDate: period.toDate)
+            : await excelService.generateTrialBalanceExcel(
+                balances: data,
+                fromDate: period.fromDate,
+                toDate: period.toDate);
       } else if (tabIndex == 1) {
         // Income Statement
         final data = await ref.read(incomeStatementProvider(period).future);
         name = 'قائمة_الدخل_${_safeName(period.fromDate)}';
-        bytes = isPdf 
-          ? await pdfService.generateIncomeStatementPdf(data)
-          : await excelService.generateIncomeStatementExcel(data);
+        bytes = isPdf
+            ? await pdfService.generateIncomeStatementPdf(data)
+            : await excelService.generateIncomeStatementExcel(data);
       } else {
         // Balance Sheet
         final data = await ref.read(balanceSheetProvider(period.toDate).future);
         name = 'الميزانية_العمومية_${_safeName(period.toDate)}';
-        bytes = isPdf 
-          ? await pdfService.generateBalanceSheetPdf(data)
-          : await excelService.generateBalanceSheetExcel(data);
+        bytes = isPdf
+            ? await pdfService.generateBalanceSheetPdf(data)
+            : await excelService.generateBalanceSheetExcel(data);
       }
 
       await pdfService.printOrShare(bytes, name: name);
     } catch (e) {
-      if (context.mounted) showSnack(context, 'خطأ أثناء التصدير: $e', error: true);
+      if (context.mounted)
+        showSnack(context, 'خطأ أثناء التصدير: $e', error: true);
     }
   }
 

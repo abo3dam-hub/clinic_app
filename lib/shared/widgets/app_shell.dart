@@ -129,9 +129,10 @@ class _AppShellState extends State<AppShell> {
                 color: AppColors.surfaceCard,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 16,
-                    offset: const Offset(-4, 0), // Shadow towards the content (left)
+                    offset: const Offset(
+                        -4, 0), // Shadow towards the content (left)
                   ),
                 ],
               ),
@@ -178,7 +179,8 @@ class _Sidebar extends StatelessWidget {
           height: 64,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: AppColors.border, width: 0.5)),
+            border:
+                Border(bottom: BorderSide(color: AppColors.border, width: 0.5)),
           ),
           child: Row(
             children: [
@@ -189,7 +191,8 @@ class _Sidebar extends StatelessWidget {
                   color: AppColors.primarySurface,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.local_hospital, color: AppColors.primary, size: 24),
+                child: const Icon(Icons.local_hospital,
+                    color: AppColors.primary, size: 24),
               ),
               if (expanded) ...[
                 const SizedBox(width: 12),
@@ -274,8 +277,8 @@ class _Tile extends StatelessWidget {
             gradient: active
                 ? LinearGradient(
                     colors: [
-                      accent.withOpacity(0.14),
-                      accent.withOpacity(0.06),
+                      accent.withValues(alpha: 0.14),
+                      accent.withValues(alpha: 0.06),
                     ],
                     begin: Alignment.centerRight,
                     end: Alignment.centerLeft,
@@ -283,7 +286,7 @@ class _Tile extends StatelessWidget {
                 : null,
             borderRadius: BorderRadius.circular(10),
             border: active
-                ? Border.all(color: accent.withOpacity(0.22), width: 1)
+                ? Border.all(color: accent.withValues(alpha: 0.22), width: 1)
                 : null,
           ),
           child: Row(

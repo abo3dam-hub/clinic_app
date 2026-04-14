@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:clinic_app/core/providers/service_providers.dart';
+import 'package:clinic_app/core/utils/date_utils.dart';
 import 'package:clinic_app/core/providers/repository_providers.dart';
 import 'package:clinic_app/core/theme/app_theme.dart';
 import 'package:clinic_app/shared/widgets/app_widgets.dart';
@@ -118,7 +119,7 @@ class _DayHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final dt = DateTime.tryParse(box.boxDate);
     final day = dt != null
-        ? DateFormat('EEEE، d MMMM yyyy', 'ar').format(dt)
+        ? ClinicDateUtils.formatArabicMonth(dt, 'EEEE، d MMMM yyyy')
         : box.boxDate;
 
     return AppCard(
@@ -219,7 +220,7 @@ class _ClosingCard extends StatelessWidget {
             value: box.totalIncome > 0
                 ? (box.totalExpenses / box.totalIncome).clamp(0.0, 1.0)
                 : 0.0,
-            backgroundColor: AppColors.success.withOpacity(0.2),
+            backgroundColor: AppColors.success.withValues(alpha: 0.2),
             valueColor: const AlwaysStoppedAnimation(AppColors.error),
             minHeight: 6,
           ),
@@ -291,7 +292,7 @@ class _ClosedBanner extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.primarySurface,
           borderRadius: AppRadius.card,
-          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
         ),
         child: Row(children: [
           const Icon(Icons.lock, color: AppColors.primary, size: 24),

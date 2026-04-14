@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:clinic_app/core/providers/service_providers.dart';
+import 'package:clinic_app/core/utils/date_utils.dart';
 import 'package:clinic_app/core/theme/app_theme.dart';
 import 'package:clinic_app/shared/widgets/app_widgets.dart';
 import 'package:clinic_app/features/patients/domain/entities/patient.dart';
@@ -16,7 +16,8 @@ class PatientDetailScreen extends ConsumerStatefulWidget {
   const PatientDetailScreen({super.key, required this.patientId});
 
   @override
-  ConsumerState<PatientDetailScreen> createState() => _PatientDetailScreenState();
+  ConsumerState<PatientDetailScreen> createState() =>
+      _PatientDetailScreenState();
 }
 
 class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
@@ -28,15 +29,19 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
       backgroundColor: AppColors.surface,
       body: profileAsync.when(
         loading: () => const LoadingView(),
-        error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.refresh(patientProfileProvider(widget.patientId))),
+        error: (e, _) => ErrorView(
+            message: e.toString(),
+            onRetry: () =>
+                ref.refresh(patientProfileProvider(widget.patientId))),
         data: (profile) {
-          if (profile == null) return const Center(child: Text('المريض غير موجود'));
-          
+          if (profile == null)
+            return const Center(child: Text('المريض غير موجود'));
+
           return Column(
             children: [
               // ── Patient Dossier Header ──────────────────────────────────
               _ProfileHeader(profile: profile),
-              
+
               // ── Unified Dossier Timeline ────────────────────────────────
               Expanded(
                 child: _DossierTimeline(profile: profile),
@@ -71,7 +76,10 @@ class _ProfileHeader extends StatelessWidget {
             backgroundColor: AppColors.primarySurface,
             child: Text(
               profile.patient.name.characters.first,
-              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.primary),
+              style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary),
             ),
           ),
           const SizedBox(width: AppSpacing.lg),
@@ -81,11 +89,15 @@ class _ProfileHeader extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Text(profile.patient.name, 
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+                    Text(profile.patient.name,
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.w800)),
                     const SizedBox(width: 8),
                     if (!profile.patient.isActive)
-                      const StatusChip(label: 'غير نشط', color: AppColors.error),
+                      const StatusChip(
+                          label: 'غير نشط', color: AppColors.error),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -93,45 +105,60 @@ class _ProfileHeader extends StatelessWidget {
                   children: [
                     Icon(Icons.phone, size: 14, color: AppColors.textHint),
                     const SizedBox(width: 4),
-                    Text(profile.patient.phone ?? 'لا يوجد هاتف', 
-                      style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                    Text(profile.patient.phone ?? 'لا يوجد هاتف',
+                        style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500)),
                     const SizedBox(width: 24),
-                    Icon(Icons.calendar_today, size: 14, color: AppColors.textHint),
+                    Icon(Icons.calendar_today,
+                        size: 14, color: AppColors.textHint),
                     const SizedBox(width: 4),
-                    Text('مسجل منذ: ${DateFormat('yyyy-MM-dd').format(profile.patient.createdAt)}', 
-                      style: TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+                    Text(
+                        'مسجل منذ: ${DateFormat('yyyy-MM-dd').format(profile.patient.createdAt)}',
+                        style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontWeight: FontWeight.w500)),
                   ],
                 ),
               ],
             ),
           ),
-          
+
           // Quick Balance Card
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
-              color: profile.outstandingBalance > 0 ? AppColors.errorSurface : AppColors.successSurface,
+              color: profile.outstandingBalance > 0
+                  ? AppColors.errorSurface
+                  : AppColors.successSurface,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
               children: [
-                Text('الرصيد المتبقي', 
-                  style: TextStyle(color: profile.outstandingBalance > 0 ? AppColors.error : AppColors.success, fontSize: 12, fontWeight: FontWeight.bold)),
-                Text('${fmt.format(profile.outstandingBalance)} \$', 
-                  style: TextStyle(
-                    color: profile.outstandingBalance > 0 ? AppColors.error : AppColors.success, 
-                    fontSize: 20, 
-                    fontWeight: FontWeight.w900
-                  )),
+                Text('الرصيد المتبقي',
+                    style: TextStyle(
+                        color: profile.outstandingBalance > 0
+                            ? AppColors.error
+                            : AppColors.success,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold)),
+                Text('${fmt.format(profile.outstandingBalance)} \$',
+                    style: TextStyle(
+                        color: profile.outstandingBalance > 0
+                            ? AppColors.error
+                            : AppColors.success,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900)),
               ],
             ),
           ),
-          
+
           const SizedBox(width: AppSpacing.lg),
           PrimaryButton(
             label: 'زيارة جديدة',
             icon: Icons.add,
-            onPressed: () => context.push('/visits/new?patientId=${profile.patient.id}'),
+            onPressed: () =>
+                context.push('/visits/new?patientId=${profile.patient.id}'),
           ),
         ],
       ),
@@ -161,49 +188,64 @@ class _DossierTimeline extends StatelessWidget {
   Widget build(BuildContext context) {
     // 1. Collect and sort all entries
     final entries = <DossierEntry>[];
-    
+
     for (final v in profile.visits) {
-      entries.add(DossierEntry(date: v.visit.visitDate, type: DossierEntryType.visit, data: v));
+      entries.add(DossierEntry(
+          date: v.visit.visitDate, type: DossierEntryType.visit, data: v));
     }
     for (final inv in profile.invoices) {
       // Assuming invoiceDate is YYYY-MM-DD
-      entries.add(DossierEntry(date: DateTime.parse(inv.invoiceDate), type: DossierEntryType.invoice, data: inv));
+      entries.add(DossierEntry(
+          date: DateTime.parse(inv.invoiceDate),
+          type: DossierEntryType.invoice,
+          data: inv));
     }
     for (final p in profile.payments) {
-      entries.add(DossierEntry(date: DateTime.parse(p.paymentDate), type: DossierEntryType.payment, data: p));
+      entries.add(DossierEntry(
+          date: DateTime.parse(p.paymentDate),
+          type: DossierEntryType.payment,
+          data: p));
     }
 
     entries.sort((a, b) => b.date.compareTo(a.date));
 
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl, vertical: AppSpacing.lg),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xxl, vertical: AppSpacing.lg),
       children: [
         // ── Summary Sheet (Basic Info) ───────────────────────────
         _DossierSummarySheet(profile: profile),
         const SizedBox(height: AppSpacing.xxl),
-        
+
         // ── Timeline Header ──────────────────────────────────────
         Padding(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
           child: Row(
             children: [
               Container(
-                width: 4, 
-                height: 24, 
-                decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(2)),
+                width: 4,
+                height: 24,
+                decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(2)),
               ),
               const SizedBox(width: 12),
-              Text('السجل التاريخي الشامل', 
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+              Text('السجل التاريخي الشامل',
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.bold)),
               const Spacer(),
-              Text('${entries.length} سجل مكتشف', style: const TextStyle(color: AppColors.textHint, fontSize: 13)),
+              Text('${entries.length} سجل مكتشف',
+                  style:
+                      const TextStyle(color: AppColors.textHint, fontSize: 13)),
             ],
           ),
         ),
-        
+
         // ── Timeline List ────────────────────────────────────────
         ...entries.map((entry) => _TimelineItem(entry: entry)),
-        
+
         const SizedBox(height: 100),
       ],
     );
@@ -233,11 +275,27 @@ class _DossierSummarySheet extends StatelessWidget {
                   spacing: 40,
                   runSpacing: 20,
                   children: [
-                    _DocInfoRow(label: 'الاسم الكامل', value: profile.patient.name, icon: Icons.person),
-                    _DocInfoRow(label: 'رقم الهاتف', value: profile.patient.phone ?? '-', icon: Icons.phone),
-                    _DocInfoRow(label: 'تاريخ الميلاد', value: profile.patient.birthDate ?? '-', icon: Icons.event),
-                    _DocInfoRow(label: 'الجنس', value: profile.patient.gender == 'male' ? 'ذكر' : 'أنثى', icon: Icons.wc),
-                    _DocInfoRow(label: 'العنوان', value: profile.patient.address ?? '-', icon: Icons.location_on),
+                    _DocInfoRow(
+                        label: 'الاسم الكامل',
+                        value: profile.patient.name,
+                        icon: Icons.person),
+                    _DocInfoRow(
+                        label: 'رقم الهاتف',
+                        value: profile.patient.phone ?? '-',
+                        icon: Icons.phone),
+                    _DocInfoRow(
+                        label: 'تاريخ الميلاد',
+                        value: profile.patient.birthDate ?? '-',
+                        icon: Icons.event),
+                    _DocInfoRow(
+                        label: 'الجنس',
+                        value:
+                            profile.patient.gender == 'male' ? 'ذكر' : 'أنثى',
+                        icon: Icons.wc),
+                    _DocInfoRow(
+                        label: 'العنوان',
+                        value: profile.patient.address ?? '-',
+                        icon: Icons.location_on),
                   ],
                 ),
               ),
@@ -247,31 +305,42 @@ class _DossierSummarySheet extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.primarySurface,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+                  border: Border.all(
+                      color: AppColors.primary.withValues(alpha: 0.1)),
                 ),
                 child: Column(
                   children: [
-                    _MiniStat(label: 'إجمالي الزيارات', value: '${profile.visits.length}', color: AppColors.primary),
+                    _MiniStat(
+                        label: 'إجمالي الزيارات',
+                        value: '${profile.visits.length}',
+                        color: AppColors.primary),
                     const Divider(height: 24),
-                    _MiniStat(label: 'الرصيد المفتوح', value: '${NumberFormat('#,##0').format(profile.outstandingBalance)} \$', color: AppColors.error),
+                    _MiniStat(
+                        label: 'الرصيد المفتوح',
+                        value:
+                            '${NumberFormat('#,##0').format(profile.outstandingBalance)} \$',
+                        color: AppColors.error),
                   ],
                 ),
               ),
             ],
           ),
-          if (profile.patient.notes != null && profile.patient.notes!.isNotEmpty) ...[
+          if (profile.patient.notes != null &&
+              profile.patient.notes!.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.xl),
-            const Text('ملاحظات دائمة للملف:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const Text('ملاحظات دائمة للملف:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(AppSpacing.md),
               width: double.infinity,
               decoration: BoxDecoration(
-                color: Colors.amber.withOpacity(0.05),
+                color: Colors.amber.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.amber.withOpacity(0.2)),
+                border: Border.all(color: Colors.amber.withValues(alpha: 0.2)),
               ),
-              child: Text(profile.patient.notes!, style: const TextStyle(fontSize: 14, height: 1.5)),
+              child: Text(profile.patient.notes!,
+                  style: const TextStyle(fontSize: 14, height: 1.5)),
             ),
           ],
         ],
@@ -284,41 +353,55 @@ class _DocInfoRow extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
-  const _DocInfoRow({required this.label, required this.value, required this.icon});
+  const _DocInfoRow(
+      {required this.label, required this.value, required this.icon});
 
   @override
   Widget build(BuildContext context) => SizedBox(
-    width: 200,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+        width: 200,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 14, color: AppColors.textHint),
-            const SizedBox(width: 8),
-            Text(label, style: const TextStyle(color: AppColors.textHint, fontSize: 12, fontWeight: FontWeight.bold)),
+            Row(
+              children: [
+                Icon(icon, size: 14, color: AppColors.textHint),
+                const SizedBox(width: 8),
+                Text(label,
+                    style: const TextStyle(
+                        color: AppColors.textHint,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(value,
+                style:
+                    const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
           ],
         ),
-        const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
-      ],
-    ),
-  );
+      );
 }
 
 class _MiniStat extends StatelessWidget {
   final String label;
   final String value;
   final Color color;
-  const _MiniStat({required this.label, required this.value, required this.color});
+  const _MiniStat(
+      {required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) => Column(
-    children: [
-      Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
-      Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: color)),
-    ],
-  );
+        children: [
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSecondary)),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 24, fontWeight: FontWeight.w900, color: color)),
+        ],
+      );
 }
 
 // ─── Timeline Items ──────────────────────────────────────────────────────────
@@ -346,7 +429,9 @@ class _TimelineItem extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 3),
                     boxShadow: [
-                      BoxShadow(color: _getColor().withOpacity(0.3), blurRadius: 6),
+                      BoxShadow(
+                          color: _getColor().withValues(alpha: 0.3),
+                          blurRadius: 6),
                     ],
                   ),
                 ),
@@ -367,8 +452,13 @@ class _TimelineItem extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(DateFormat('d MMMM yyyy', 'ar').format(entry.date), 
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textHint)),
+                        Text(
+                            ClinicDateUtils.formatArabicMonth(
+                                entry.date, 'd MMMM yyyy'),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: AppColors.textHint)),
                         const Spacer(),
                         _TypeChip(type: entry.type),
                       ],
@@ -387,9 +477,12 @@ class _TimelineItem extends StatelessWidget {
 
   Color _getColor() {
     switch (entry.type) {
-      case DossierEntryType.visit: return AppColors.primary;
-      case DossierEntryType.invoice: return Colors.blue;
-      case DossierEntryType.payment: return AppColors.success;
+      case DossierEntryType.visit:
+        return AppColors.primary;
+      case DossierEntryType.invoice:
+        return Colors.blue;
+      case DossierEntryType.payment:
+        return AppColors.success;
     }
   }
 
@@ -400,22 +493,33 @@ class _TimelineItem extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('زيارة طبية - ${item.visit.doctorName ?? 'الطبيب العام'}', 
-            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+          Text('زيارة طبية - ${item.visit.doctorName ?? 'الطبيب العام'}',
+              style:
+                  const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
           if (item.visit.diagnosis != null) ...[
             const SizedBox(height: 8),
-            Text('التشخيص: ${item.visit.diagnosis}', style: const TextStyle(fontSize: 14)),
+            Text('التشخيص: ${item.visit.diagnosis}',
+                style: const TextStyle(fontSize: 14)),
           ],
           if (item.procedures.isNotEmpty) ...[
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: item.procedures.map((p) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: AppColors.primarySurface, borderRadius: BorderRadius.circular(20)),
-                child: Text(p.procedureName ?? 'إجراء', style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold)),
-              )).toList(),
+              children: item.procedures
+                  .map((p) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                            color: AppColors.primarySurface,
+                            borderRadius: BorderRadius.circular(20)),
+                        child: Text(p.procedureName ?? 'إجراء',
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.bold)),
+                      ))
+                  .toList(),
             ),
           ],
         ],
@@ -430,8 +534,10 @@ class _TimelineItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('فاتورة رقم #${inv.id}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text('بمبلغ إجمالي ${fmt.format(inv.netAmount)} \$', style: const TextStyle(color: AppColors.textSecondary)),
+                Text('فاتورة رقم #${inv.id}',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text('بمبلغ إجمالي ${fmt.format(inv.netAmount)} \$',
+                    style: const TextStyle(color: AppColors.textSecondary)),
               ],
             ),
           ),
@@ -448,12 +554,18 @@ class _TimelineItem extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('دفعة نقدية - ${p.method.name}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.success)),
-                Text('تم دفع مبلغ ${fmt.format(p.amount)} \$', style: const TextStyle(color: AppColors.textSecondary)),
+                Text('دفعة نقدية - ${p.method.name}',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, color: AppColors.success)),
+                Text('تم دفع مبلغ ${fmt.format(p.amount)} \$',
+                    style: const TextStyle(color: AppColors.textSecondary)),
               ],
             ),
           ),
-          if (p.notes != null) Text(p.notes!, style: const TextStyle(fontSize: 11, fontStyle: FontStyle.italic)),
+          if (p.notes != null)
+            Text(p.notes!,
+                style:
+                    const TextStyle(fontSize: 11, fontStyle: FontStyle.italic)),
         ],
       );
     }
@@ -470,19 +582,35 @@ class _TypeChip extends StatelessWidget {
     IconData icon;
     Color color;
     switch (type) {
-      case DossierEntryType.visit: label = 'زيارة'; icon = Icons.medical_services; color = AppColors.primary; break;
-      case DossierEntryType.invoice: label = 'فاتورة'; icon = Icons.receipt_long; color = Colors.blue; break;
-      case DossierEntryType.payment: label = 'دفعة'; icon = Icons.payment; color = AppColors.success; break;
+      case DossierEntryType.visit:
+        label = 'زيارة';
+        icon = Icons.medical_services;
+        color = AppColors.primary;
+        break;
+      case DossierEntryType.invoice:
+        label = 'فاتورة';
+        icon = Icons.receipt_long;
+        color = Colors.blue;
+        break;
+      case DossierEntryType.payment:
+        label = 'دفعة';
+        icon = Icons.payment;
+        color = AppColors.success;
+        break;
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8)),
       child: Row(
         children: [
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 6),
-          Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+          Text(label,
+              style: TextStyle(
+                  color: color, fontSize: 11, fontWeight: FontWeight.bold)),
         ],
       ),
     );
