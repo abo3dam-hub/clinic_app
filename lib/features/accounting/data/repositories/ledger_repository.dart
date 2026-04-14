@@ -14,9 +14,8 @@ enum AccountType { asset, liability, equity, revenue, expense }
 
 extension AccountTypeX on AccountType {
   String get value => name;
-  static AccountType fromString(String s) =>
-      AccountType.values.firstWhere((e) => e.name == s,
-          orElse: () => AccountType.asset);
+  static AccountType fromString(String s) => AccountType.values
+      .firstWhere((e) => e.name == s, orElse: () => AccountType.asset);
 
   /// Normal balance side for this account type.
   bool get normalDebit =>
@@ -101,8 +100,8 @@ class LedgerBalance {
 
   /// Net balance in normal direction (positive = healthy).
   double get balance => account.type.normalDebit
-      ? totalDebit - totalCredit   // Asset / Expense: DR normal
-      : totalCredit - totalDebit;  // Liability / Equity / Revenue: CR normal
+      ? totalDebit - totalCredit // Asset / Expense: DR normal
+      : totalCredit - totalDebit; // Liability / Equity / Revenue: CR normal
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -113,11 +112,11 @@ class LedgerRepository {
   LedgerRepository(this._db);
 
   // ─── Well-known account codes ─────────────────────────────────
-  static const String codeCash               = '1100';
+  static const String codeCash = '1100';
   static const String codeAccountsReceivable = '1200';
-  static const String codeRevenue            = '4100';
-  static const String codeExpenses           = '5100';
-  static const String codeRetainedEarnings   = '3000';
+  static const String codeRevenue = '4100';
+  static const String codeExpenses = '5100';
+  static const String codeRetainedEarnings = '3000';
 
   // ─── COA ──────────────────────────────────────────────────────
 
@@ -149,19 +148,19 @@ class LedgerRepository {
     return _db.runTransaction<int>((txn) async {
       final now = DateTime.now().toIso8601String();
       final entryId = await txn.insert('journal_entries', {
-        'reference':   entry.reference,
-        'entry_date':  entry.entryDate,
+        'reference': entry.reference,
+        'entry_date': entry.entryDate,
         'description': entry.description,
         'source_type': entry.sourceType,
-        'source_id':   entry.sourceId,
-        'created_at':  now,
+        'source_id': entry.sourceId,
+        'created_at': now,
       });
       for (final line in entry.lines) {
         await txn.insert('journal_entry_lines', {
-          'entry_id':    entryId,
-          'account_id':  line.accountId,
-          'debit':       line.debit,
-          'credit':      line.credit,
+          'entry_id': entryId,
+          'account_id': line.accountId,
+          'debit': line.debit,
+          'credit': line.credit,
           'description': line.description,
         });
       }
@@ -181,12 +180,14 @@ class LedgerRepository {
     if (rows.isEmpty) return;
 
     final desc = rows.first['description'] as String;
-    final lines = rows.map((r) => JournalLine(
-          entryId: 0,
-          accountId: r['account_id'] as int,
-          debit: (r['credit'] as num).toDouble(),   // swap
-          credit: (r['debit'] as num).toDouble(),   // swap
-        )).toList();
+    final lines = rows
+        .map((r) => JournalLine(
+              entryId: 0,
+              accountId: r['account_id'] as int,
+              debit: (r['credit'] as num).toDouble(), // swap
+              credit: (r['debit'] as num).toDouble(), // swap
+            ))
+        .toList();
 
     await postEntry(JournalEntry(
       entryDate: date,
@@ -276,27 +277,30 @@ class LedgerRepository {
     // Include all entries up to and including asOfDate
     final balances = await getTrialBalance(toDate: asOfDate);
 
-    double assets      = 0;
+    double assets = 0;
     double liabilities = 0;
-    double equity      = 0;
+    double equity = 0;
 
-    final assetLines      = <BSLine>[];
-    final liabilityLines  = <BSLine>[];
-    final equityLines     = <BSLine>[];
+    final assetLines = <BSLine>[];
+    final liabilityLines = <BSLine>[];
+    final equityLines = <BSLine>[];
 
     for (final b in balances) {
       switch (b.account.type) {
         case AccountType.asset:
           assets += b.balance;
-          assetLines.add(BSLine(accountName: b.account.name, amount: b.balance));
+          assetLines
+              .add(BSLine(accountName: b.account.name, amount: b.balance));
           break;
         case AccountType.liability:
           liabilities += b.balance;
-          liabilityLines.add(BSLine(accountName: b.account.name, amount: b.balance));
+          liabilityLines
+              .add(BSLine(accountName: b.account.name, amount: b.balance));
           break;
         case AccountType.equity:
           equity += b.balance;
-          equityLines.add(BSLine(accountName: b.account.name, amount: b.balance));
+          equityLines
+              .add(BSLine(accountName: b.account.name, amount: b.balance));
           break;
         default:
           break; // Revenue / Expense roll into retained earnings separately
@@ -304,14 +308,16 @@ class LedgerRepository {
     }
 
     // Net income from inception to asOfDate rolls into equity
-    final pl = await getIncomeStatement(fromDate: '2000-01-01', toDate: asOfDate);
+    final pl =
+        await getIncomeStatement(fromDate: '2000-01-01', toDate: asOfDate);
     equity += pl.netIncome;
+    final totalEquity = equity; // net income already included once
 
     return BalanceSheet(
       asOfDate: asOfDate,
       totalAssets: assets,
       totalLiabilities: liabilities,
-      totalEquity: equity + pl.netIncome,
+      totalEquity: totalEquity,
       assetLines: assetLines,
       liabilityLines: liabilityLines,
       equityLines: equityLines,
@@ -340,7 +346,7 @@ class LedgerRepository {
 
     double running = 0;
     return rows.map((r) {
-      final debit  = (r['debit']  as num).toDouble();
+      final debit = (r['debit'] as num).toDouble();
       final credit = (r['credit'] as num).toDouble();
       running += debit - credit; // for asset/expense; caller can flip sign
       return LedgerEntry(
@@ -359,23 +365,23 @@ class LedgerRepository {
   String _buildDateCondition(String? from, String? to, String col) {
     if (from != null && to != null) return 'AND $col BETWEEN ? AND ?';
     if (from != null) return 'AND $col >= ?';
-    if (to   != null) return 'AND $col <= ?';
+    if (to != null) return 'AND $col <= ?';
     return '';
   }
 
   List<Object?> _buildDateArgs(String? from, String? to) {
     if (from != null && to != null) return [from, to];
     if (from != null) return [from];
-    if (to   != null) return [to];
+    if (to != null) return [to];
     return [];
   }
 
   Account _accountFromMap(Map<String, dynamic> m) => Account(
-        id:        m['id'] as int,
-        code:      m['code'] as String,
-        name:      m['name'] as String,
-        type:      AccountTypeX.fromString(m['type'] as String),
-        isActive:  (m['is_active'] as int? ?? 1) == 1,
+        id: m['id'] as int,
+        code: m['code'] as String,
+        name: m['name'] as String,
+        type: AccountTypeX.fromString(m['type'] as String),
+        isActive: (m['is_active'] as int? ?? 1) == 1,
         sortOrder: m['sort_order'] as int? ?? 0,
       );
 }
