@@ -806,7 +806,8 @@ class _PendingPatientsCard extends StatelessWidget {
                             fontWeight: FontWeight.w900,
                             fontSize: 14),
                       ),
-                      onTap: () => context.push('/patients/${item.patientId}'),
+                      onTap: () => context.go(
+                          '/invoices?patientId=${item.patientId}&status=open'),
                     ).animate().fadeIn(delay: (80 * i).ms);
                   },
                 );

@@ -72,10 +72,26 @@ class InvoiceRepositoryImpl {
   }) async {
     final conditions = <String>[];
     final args = <Object?>[];
-    if (fromDate != null) { conditions.add('i.invoice_date >= ?'); args.add(fromDate); }
-    if (toDate   != null) { conditions.add('i.invoice_date <= ?'); args.add(toDate);   }
-    if (status   != null) { conditions.add('i.status = ?');        args.add(status);   }
-    if (patientId != null){ conditions.add('i.patient_id = ?');    args.add(patientId);}
+    if (fromDate != null) {
+      conditions.add('i.invoice_date >= ?');
+      args.add(fromDate);
+    }
+    if (toDate != null) {
+      conditions.add('i.invoice_date <= ?');
+      args.add(toDate);
+    }
+    if (status != null) {
+      if (status == 'open') {
+        conditions.add("i.status IN ('unpaid', 'partial')");
+      } else {
+        conditions.add('i.status = ?');
+        args.add(status);
+      }
+    }
+    if (patientId != null) {
+      conditions.add('i.patient_id = ?');
+      args.add(patientId);
+    }
     final where = conditions.isEmpty ? '' : 'WHERE ${conditions.join(' AND ')}';
     final rows = await _db.rawQuery('''
       SELECT i.*, p.name AS patient_name
@@ -114,18 +130,18 @@ class InvoiceRepositoryImpl {
     _validate(invoice);
     final now = DateTime.now().toIso8601String();
     final map = {
-      'visit_id':     invoice.visitId,
-      'patient_id':   invoice.patientId,
+      'visit_id': invoice.visitId,
+      'patient_id': invoice.patientId,
       'invoice_date': invoice.invoiceDate,
       'total_amount': invoice.totalAmount,
-      'discount':     invoice.discount,
-      'net_amount':   invoice.netAmount,
-      'paid_amount':  0.0,
-      'status':       InvoiceStatus.unpaid.value,
-      'notes':        invoice.notes,
-      'is_locked':    0,
-      'created_at':   now,
-      'updated_at':   now,
+      'discount': invoice.discount,
+      'net_amount': invoice.netAmount,
+      'paid_amount': 0.0,
+      'status': InvoiceStatus.unpaid.value,
+      'notes': invoice.notes,
+      'is_locked': 0,
+      'created_at': now,
+      'updated_at': now,
     };
     final id = await _db.insert('invoices', map);
     await _db.writeAuditLog(
@@ -140,28 +156,28 @@ class InvoiceRepositoryImpl {
     final id = await _db.runTransaction<int>((txn) async {
       final now = DateTime.now().toIso8601String();
       final invId = await txn.insert('invoices', {
-        'visit_id':     invoice.visitId,
-        'patient_id':   invoice.patientId,
+        'visit_id': invoice.visitId,
+        'patient_id': invoice.patientId,
         'invoice_date': invoice.invoiceDate,
         'total_amount': invoice.totalAmount,
-        'discount':     0.0,
-        'net_amount':   invoice.netAmount,
-        'paid_amount':  0.0,
-        'status':       InvoiceStatus.unpaid.value,
-        'notes':        invoice.notes,
-        'is_locked':    0,
-        'created_at':   now,
-        'updated_at':   now,
+        'discount': 0.0,
+        'net_amount': invoice.netAmount,
+        'paid_amount': 0.0,
+        'status': InvoiceStatus.unpaid.value,
+        'notes': invoice.notes,
+        'is_locked': 0,
+        'created_at': now,
+        'updated_at': now,
       });
       for (final p in procedures) {
         await txn.insert('invoice_items', {
-          'invoice_id':  invId,
+          'invoice_id': invId,
           'description': p.procedureName ?? 'إجراء #${p.procedureId}',
-          'quantity':    p.quantity,
-          'unit_price':  p.unitPrice,
-          'discount':    p.discount,
-          'total':       p.lineTotal,
-          'created_at':  now,
+          'quantity': p.quantity,
+          'unit_price': p.unitPrice,
+          'discount': p.discount,
+          'total': p.lineTotal,
+          'created_at': now,
         });
       }
       return invId;
@@ -183,8 +199,8 @@ class InvoiceRepositoryImpl {
 
   /// Atomically replaces items. Preserves paid_amount and derives status.
   /// CRITICAL: Throws StateError if new netAmount < paidAmount.
-  Future<void> replaceItems(int invoiceId,
-      List<VisitProcedureItem> procedures, double totalAmount) async {
+  Future<void> replaceItems(int invoiceId, List<VisitProcedureItem> procedures,
+      double totalAmount) async {
     double? oldNet;
     double? newNet;
 
@@ -198,7 +214,7 @@ class InvoiceRepositoryImpl {
         throw StateError('هذه الفاتورة مقفلة ولا يمكن تعديلها');
       }
 
-      final discount   = (inv['discount']    as num).toDouble();
+      final discount = (inv['discount'] as num).toDouble();
       final paidAmount = (inv['paid_amount'] as num).toDouble();
       oldNet = (inv['net_amount'] as num).toDouble();
       newNet = (totalAmount - discount).clamp(0.0, double.infinity);
@@ -206,11 +222,10 @@ class InvoiceRepositoryImpl {
       // ── CRITICAL GUARD ──────────────────────────────────────────
       // Prevent netAmount < paidAmount (impossible financial state).
       if (newNet! < paidAmount - 0.001) {
-        throw StateError(
-          'لا يمكن تعديل الفاتورة: الإجمالي الجديد '
-          '(\$${newNet!.toStringAsFixed(2)}) أقل من '
-          'المدفوع بالفعل (\$${paidAmount.toStringAsFixed(2)}). '
-          'يرجى حذف الدفعة أولاً.');
+        throw StateError('لا يمكن تعديل الفاتورة: الإجمالي الجديد '
+            '(\$${newNet!.toStringAsFixed(2)}) أقل من '
+            'المدفوع بالفعل (\$${paidAmount.toStringAsFixed(2)}). '
+            'يرجى حذف الدفعة أولاً.');
       }
 
       // Replace items
@@ -219,23 +234,27 @@ class InvoiceRepositoryImpl {
       final now = DateTime.now().toIso8601String();
       for (final p in procedures) {
         await txn.insert('invoice_items', {
-          'invoice_id':  invoiceId,
+          'invoice_id': invoiceId,
           'description': p.procedureName ?? 'إجراء #${p.procedureId}',
-          'quantity':    p.quantity,
-          'unit_price':  p.unitPrice,
-          'discount':    p.discount,
-          'total':       p.lineTotal,
-          'created_at':  now,
+          'quantity': p.quantity,
+          'unit_price': p.unitPrice,
+          'discount': p.discount,
+          'total': p.lineTotal,
+          'created_at': now,
         });
       }
 
       final newStatus = InvoiceStatusX.derive(paidAmount, newNet!);
-      await txn.update('invoices', {
-        'total_amount': totalAmount,
-        'net_amount':   newNet,
-        'status':       newStatus.value,
-        'updated_at':   now,
-      }, where: 'id = ?', whereArgs: [invoiceId]);
+      await txn.update(
+          'invoices',
+          {
+            'total_amount': totalAmount,
+            'net_amount': newNet,
+            'status': newStatus.value,
+            'updated_at': now,
+          },
+          where: 'id = ?',
+          whereArgs: [invoiceId]);
     });
 
     // Adjust journal if net changed
@@ -258,14 +277,18 @@ class InvoiceRepositoryImpl {
     assert(invoice.id != null);
     await _assertNotLocked(invoice.id!);
     _validate(invoice);
-    await _db.update('invoices', {
-      'visit_id':     invoice.visitId,
-      'patient_id':   invoice.patientId,
-      'invoice_date': invoice.invoiceDate,
-      'notes':        invoice.notes,
-      'is_locked':    invoice.isLocked ? 1 : 0,
-      'updated_at':   DateTime.now().toIso8601String(),
-    }, where: 'id = ?', whereArgs: [invoice.id]);
+    await _db.update(
+        'invoices',
+        {
+          'visit_id': invoice.visitId,
+          'patient_id': invoice.patientId,
+          'invoice_date': invoice.invoiceDate,
+          'notes': invoice.notes,
+          'is_locked': invoice.isLocked ? 1 : 0,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [invoice.id]);
   }
 
   /// Updates financial fields (discount, net_amount). Derives correct status.
@@ -280,15 +303,19 @@ class InvoiceRepositoryImpl {
     if (rows.isEmpty) throw StateError('الفاتورة غير موجودة');
 
     final paidAmount = (rows.first['paid_amount'] as num).toDouble();
-    final oldNet     = (rows.first['net_amount']  as num).toDouble();
-    final newStatus  = InvoiceStatusX.derive(paidAmount, netAmount);
+    final oldNet = (rows.first['net_amount'] as num).toDouble();
+    final newStatus = InvoiceStatusX.derive(paidAmount, netAmount);
 
-    await _db.update('invoices', {
-      'discount':   discount,
-      'net_amount': netAmount,
-      'status':     newStatus.value,
-      'updated_at': DateTime.now().toIso8601String(),
-    }, where: 'id = ?', whereArgs: [invoiceId]);
+    await _db.update(
+        'invoices',
+        {
+          'discount': discount,
+          'net_amount': netAmount,
+          'status': newStatus.value,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [invoiceId]);
 
     // Journal: adjust AR / Revenue for the delta
     final delta = netAmount - oldNet;
@@ -310,7 +337,9 @@ class InvoiceRepositoryImpl {
         {'status': 'cancelled', 'updated_at': DateTime.now().toIso8601String()},
         where: 'id = ?', whereArgs: [id]);
     await _db.writeAuditLog(
-        tableName: 'invoices', recordId: id, action: 'UPDATE',
+        tableName: 'invoices',
+        recordId: id,
+        action: 'UPDATE',
         newValues: {'status': 'cancelled'});
 
     // Reverse the original revenue recognition
@@ -335,13 +364,13 @@ class InvoiceRepositoryImpl {
   Future<int> addItem(InvoiceItem item) async {
     await _assertNotLocked(item.invoiceId);
     final map = {
-      'invoice_id':  item.invoiceId,
+      'invoice_id': item.invoiceId,
       'description': item.description,
-      'quantity':    item.quantity,
-      'unit_price':  item.unitPrice,
-      'discount':    item.discount,
-      'total':       item.total,
-      'created_at':  DateTime.now().toIso8601String(),
+      'quantity': item.quantity,
+      'unit_price': item.unitPrice,
+      'discount': item.discount,
+      'total': item.total,
+      'created_at': DateTime.now().toIso8601String(),
     };
     final id = await _db.insert('invoice_items', map);
     await _recalculateInvoice(item.invoiceId);
@@ -388,28 +417,31 @@ class InvoiceRepositoryImpl {
       final remaining = netAmount - paidSoFar;
 
       if (payment.amount > remaining + 0.001) {
-        throw StateError(
-            'مبلغ الدفعة (\$${payment.amount.toStringAsFixed(2)}) '
+        throw StateError('مبلغ الدفعة (\$${payment.amount.toStringAsFixed(2)}) '
             'يتجاوز المبلغ المتبقي (\$${remaining.toStringAsFixed(2)})');
       }
 
       final now = DateTime.now().toIso8601String();
       final payMap = {
-        'invoice_id':   payment.invoiceId,
-        'amount':       payment.amount,
+        'invoice_id': payment.invoiceId,
+        'amount': payment.amount,
         'payment_date': payment.paymentDate,
-        'method':       payment.method.value,
-        'notes':        payment.notes,
-        'created_at':   now,
+        'method': payment.method.value,
+        'notes': payment.notes,
+        'created_at': now,
       };
       final payId = await txn.insert('payments', payMap);
-      final newPaid  = paidSoFar + payment.amount;
+      final newPaid = paidSoFar + payment.amount;
       final newStatus = InvoiceStatusX.derive(newPaid, netAmount);
-      await txn.update('invoices', {
-        'paid_amount': newPaid,
-        'status':      newStatus.value,
-        'updated_at':  now,
-      }, where: 'id = ?', whereArgs: [payment.invoiceId]);
+      await txn.update(
+          'invoices',
+          {
+            'paid_amount': newPaid,
+            'status': newStatus.value,
+            'updated_at': now,
+          },
+          where: 'id = ?',
+          whereArgs: [payment.invoiceId]);
       return payId;
     });
 
@@ -431,9 +463,9 @@ class InvoiceRepositoryImpl {
         where: 'id = ?', whereArgs: [paymentId], limit: 1);
     if (rows.isEmpty) return;
 
-    final invoiceId    = rows.first['invoice_id']   as int;
-    final paymentAmount = (rows.first['amount']     as num).toDouble();
-    final paymentDate   = rows.first['payment_date'] as String;
+    final invoiceId = rows.first['invoice_id'] as int;
+    final paymentAmount = (rows.first['amount'] as num).toDouble();
+    final paymentDate = rows.first['payment_date'] as String;
     await _assertNotLocked(invoiceId);
 
     await _db.runTransaction<void>((txn) async {
@@ -446,11 +478,15 @@ class InvoiceRepositoryImpl {
           where: 'id = ?', whereArgs: [invoiceId], limit: 1);
       final netAmount = (invRows.first['net_amount'] as num).toDouble();
       final newStatus = InvoiceStatusX.derive(newPaid, netAmount);
-      await txn.update('invoices', {
-        'paid_amount': newPaid,
-        'status':      newStatus.value,
-        'updated_at':  DateTime.now().toIso8601String(),
-      }, where: 'id = ?', whereArgs: [invoiceId]);
+      await txn.update(
+          'invoices',
+          {
+            'paid_amount': newPaid,
+            'status': newStatus.value,
+            'updated_at': DateTime.now().toIso8601String(),
+          },
+          where: 'id = ?',
+          whereArgs: [invoiceId]);
     });
 
     // Journal: DR AR | CR Cash (reverse)
@@ -479,17 +515,21 @@ class InvoiceRepositoryImpl {
         where: 'id = ?', whereArgs: [invoiceId], limit: 1);
     if (invRows.isEmpty) return;
 
-    final discount   = (invRows.first['discount']    as num).toDouble();
+    final discount = (invRows.first['discount'] as num).toDouble();
     final paidAmount = (invRows.first['paid_amount'] as num).toDouble();
-    final netAmount  = (totalAmount - discount).clamp(0.0, double.infinity);
-    final newStatus  = InvoiceStatusX.derive(paidAmount, netAmount);
+    final netAmount = (totalAmount - discount).clamp(0.0, double.infinity);
+    final newStatus = InvoiceStatusX.derive(paidAmount, netAmount);
 
-    await _db.update('invoices', {
-      'total_amount': totalAmount,
-      'net_amount':   netAmount,
-      'status':       newStatus.value,
-      'updated_at':   DateTime.now().toIso8601String(),
-    }, where: 'id = ?', whereArgs: [invoiceId]);
+    await _db.update(
+        'invoices',
+        {
+          'total_amount': totalAmount,
+          'net_amount': netAmount,
+          'status': newStatus.value,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [invoiceId]);
   }
 
   Future<void> _assertNotLocked(int invoiceId) async {
@@ -502,7 +542,8 @@ class InvoiceRepositoryImpl {
 
   void _validate(Invoice inv) {
     if (inv.invoiceDate.isEmpty) throw ArgumentError('تاريخ الفاتورة مطلوب');
-    if (inv.netAmount < 0) throw ArgumentError('صافي الفاتورة لا يمكن أن يكون سالباً');
+    if (inv.netAmount < 0)
+      throw ArgumentError('صافي الفاتورة لا يمكن أن يكون سالباً');
   }
 
   /// Fires a journal write in a fire-and-forget manner.

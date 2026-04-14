@@ -20,11 +20,47 @@ import '../../../../core/utils/date_utils.dart';
 // ─── Currency helper — single source of truth ─────────────────────────────────
 String _money(NumberFormat fmt, double amount) => '\$${fmt.format(amount)}';
 
-class InvoicesScreen extends ConsumerWidget {
-  const InvoicesScreen({super.key});
+class InvoicesScreen extends ConsumerStatefulWidget {
+  final Map<String, String>? queryParams;
+  const InvoicesScreen({super.key, this.queryParams});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<InvoicesScreen> createState() => _InvoicesScreenState();
+}
+
+class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
+  bool _queryParamsApplied = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _applyQueryParamsIfNeeded();
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant InvoicesScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.queryParams != oldWidget.queryParams) {
+      _queryParamsApplied = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _applyQueryParamsIfNeeded();
+      });
+    }
+  }
+
+  void _applyQueryParamsIfNeeded() {
+    final params = widget.queryParams;
+    if (!_queryParamsApplied && params != null && params.isNotEmpty) {
+      final queryFilter = _filterFromQueryParams(params);
+      ref.read(invoiceFilterProvider.notifier).state = queryFilter;
+      _queryParamsApplied = true;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final invoicesAsync = ref.watch(invoicesProvider);
     final filter = ref.watch(invoiceFilterProvider);
     final fmt = NumberFormat('#,##0.00', 'en');
@@ -153,6 +189,7 @@ class _InvoiceFilters extends StatelessWidget {
                   labelText: 'الحالة', prefixIcon: Icon(Icons.filter_list)),
               items: const [
                 DropdownMenuItem(value: null, child: Text('كل الحالات')),
+                DropdownMenuItem(value: 'open', child: Text('معلقة')),
                 DropdownMenuItem(value: 'unpaid', child: Text('غير مدفوعة')),
                 DropdownMenuItem(value: 'partial', child: Text('جزئية')),
                 DropdownMenuItem(value: 'paid', child: Text('مدفوعة')),
@@ -181,6 +218,28 @@ class _InvoiceFilters extends StatelessWidget {
           ),
         ],
       );
+}
+
+InvoiceFilter _filterFromQueryParams(Map<String, String>? params) {
+  final patientId = params != null && params['patientId'] != null
+      ? int.tryParse(params['patientId']!)
+      : null;
+  final status = params != null ? params['status'] : null;
+  final fromDate = params != null ? params['fromDate'] : null;
+  final toDate = params != null ? params['toDate'] : null;
+  return InvoiceFilter(
+    fromDate: fromDate,
+    toDate: toDate,
+    status: status,
+    patientId: patientId,
+  );
+}
+
+bool _isSameFilter(InvoiceFilter a, InvoiceFilter b) {
+  return a.fromDate == b.fromDate &&
+      a.toDate == b.toDate &&
+      a.status == b.status &&
+      a.patientId == b.patientId;
 }
 
 class _DateFilter extends StatelessWidget {

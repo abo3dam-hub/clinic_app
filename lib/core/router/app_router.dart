@@ -86,7 +86,8 @@ final appRouter = GoRouter(
         ),
         GoRoute(
           path: '/invoices',
-          builder: (_, __) => const InvoicesScreen(),
+          builder: (_, state) =>
+              InvoicesScreen(queryParams: state.uri.queryParameters),
           routes: [
             GoRoute(
               path: ':id',
