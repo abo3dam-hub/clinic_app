@@ -214,10 +214,12 @@ class _VisitFormScreenState extends ConsumerState<VisitFormScreen> {
         if (mounted) showSnack(context, 'تم إضافة الزيارة');
       }
       ref.invalidate(visitsProvider);
-      
+      if (_patientId != null) {
+        ref.invalidate(patientProfileProvider(_patientId!));
+        ref.invalidate(pendingBalancesProvider);
+      }
       final todayStr = ClinicDateUtils.todayString();
       ref.invalidate(dailyReportProvider(todayStr));
-      
       if (mounted) context.go('/visits/$finalId');
     } catch (e) {
       if (mounted) showSnack(context, 'خطأ: $e', error: true);

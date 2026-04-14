@@ -370,7 +370,8 @@ class _ProceduresCard extends ConsumerWidget {
                           }
                         },
                         tooltip: 'إضافة إجراء جديد للنظام',
-                        icon: const Icon(Icons.add_box, color: AppColors.primary),
+                        icon:
+                            const Icon(Icons.add_box, color: AppColors.primary),
                         padding: const EdgeInsets.only(bottom: 8),
                       ),
                     ],
@@ -415,7 +416,8 @@ class _ProceduresCard extends ConsumerWidget {
                             fontStyle: FontStyle.italic))
                   else
                     Column(
-                      children: selectedConsumables.asMap().entries.map((entry) {
+                      children:
+                          selectedConsumables.asMap().entries.map((entry) {
                         final idx = entry.key;
                         final con = entry.value;
                         return Padding(
@@ -438,8 +440,8 @@ class _ProceduresCard extends ConsumerWidget {
                               IconButton(
                                 icon: const Icon(Icons.delete_outline,
                                     color: AppColors.error, size: 20),
-                                onPressed: () =>
-                                    setSt(() => selectedConsumables.removeAt(idx)),
+                                onPressed: () => setSt(
+                                    () => selectedConsumables.removeAt(idx)),
                                 visualDensity: VisualDensity.compact,
                               ),
                             ],
@@ -453,8 +455,10 @@ class _ProceduresCard extends ConsumerWidget {
                     icon: Icons.inventory_2_outlined,
                     compact: true,
                     onPressed: () async {
-                      final res = await _showAddMaterialDialog(context, allItems);
-                      if (res != null) setSt(() => selectedConsumables.add(res));
+                      final res =
+                          await _showAddMaterialDialog(context, allItems);
+                      if (res != null)
+                        setSt(() => selectedConsumables.add(res));
                     },
                   ),
                 ],
@@ -510,7 +514,8 @@ class _ProceduresCard extends ConsumerWidget {
                 value: selectedId,
                 items: items
                     .map<DropdownMenuItem<int>>((i) => DropdownMenuItem<int>(
-                        value: i.id!, child: Text('${i.name} (المتوفر: ${i.quantity})')))
+                        value: i.id!,
+                        child: Text('${i.name} (المتوفر: ${i.quantity})')))
                     .toList(),
                 onChanged: (v) => setSt(() => selectedId = v),
               ),
@@ -518,25 +523,29 @@ class _ProceduresCard extends ConsumerWidget {
               AppTextField(
                 label: 'الكمية',
                 controller: qtyCtrl,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 onChanged: (v) => qty = double.tryParse(v) ?? 1,
               ),
             ],
           ),
           actions: [
             TextButton(
-                onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('إلغاء')),
             PrimaryButton(
               label: 'إضافة',
               onPressed: () {
                 if (selectedId == null) return;
                 final item = items.firstWhere((i) => i.id == selectedId);
-                Navigator.pop(ctx, VisitConsumable(
-                  itemId: item.id!,
-                  name: item.name,
-                  quantity: qty,
-                  unitCost: item.unitCost,
-                ));
+                Navigator.pop(
+                    ctx,
+                    VisitConsumable(
+                      itemId: item.id!,
+                      name: item.name,
+                      quantity: qty,
+                      unitCost: item.unitCost,
+                    ));
               },
             ),
           ],
@@ -545,10 +554,11 @@ class _ProceduresCard extends ConsumerWidget {
     );
   }
 
-  Future<int?> _showQuickAddProcedureDialog(BuildContext context, WidgetRef ref) async {
+  Future<int?> _showQuickAddProcedureDialog(
+      BuildContext context, WidgetRef ref) async {
     final nameCtrl = TextEditingController();
     final priceCtrl = TextEditingController();
-    
+
     return showDialog<int>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -565,7 +575,8 @@ class _ProceduresCard extends ConsumerWidget {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
           PrimaryButton(
             label: 'حفظ',
             onPressed: () async {
@@ -621,6 +632,8 @@ class _ProceduresCard extends ConsumerWidget {
       ref.invalidate(visitProceduresProvider(visit.id!));
       ref.invalidate(visitInvoiceProvider(visit.id!));
       ref.invalidate(invoicesProvider);
+      ref.invalidate(patientProfileProvider(visit.patientId));
+      ref.invalidate(pendingBalancesProvider);
       ref.invalidate(dailyReportProvider(today));
 
       if (context.mounted)
@@ -651,6 +664,8 @@ class _ProceduresCard extends ConsumerWidget {
       ref.invalidate(visitProceduresProvider(visit.id!));
       ref.invalidate(visitInvoiceProvider(visit.id!));
       ref.invalidate(invoicesProvider);
+      ref.invalidate(patientProfileProvider(visit.patientId));
+      ref.invalidate(pendingBalancesProvider);
       ref.invalidate(dailyReportProvider(today));
 
       if (context.mounted) showSnack(context, 'تم حذف الإجراء');

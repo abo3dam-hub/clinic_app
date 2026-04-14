@@ -400,12 +400,18 @@ class InvoiceDetailScreen extends ConsumerWidget {
         isDanger: true);
     if (ok) {
       try {
+        final inv =
+            await ref.read(invoiceRepositoryProvider).getById(invoiceId);
         await ref.read(invoiceRepositoryProvider).deletePayment(paymentId);
         ref.invalidate(invoiceByIdProvider(invoiceId));
         ref.invalidate(invoicePaymentsProvider(invoiceId));
         ref.invalidate(invoicesProvider);
         ref.invalidate(dailyReportProvider(ClinicDateUtils.todayString()));
         ref.invalidate(cashBoxTodayProvider);
+        if (inv?.patientId != null) {
+          ref.invalidate(patientProfileProvider(inv!.patientId));
+          ref.invalidate(pendingBalancesProvider);
+        }
         if (context.mounted) showSnack(context, 'تم حذف الدفعة');
       } catch (e) {
         if (context.mounted) showSnack(context, 'خطأ: $e', error: true);
@@ -510,6 +516,8 @@ Future<void> _showManualInvoiceDialog(
                 ref.invalidate(invoicesProvider);
                 ref.invalidate(
                     dailyReportProvider(ClinicDateUtils.todayString()));
+                ref.invalidate(patientProfileProvider(selectedPatientId!));
+                ref.invalidate(pendingBalancesProvider);
 
                 if (context.mounted) {
                   showSnack(context, 'تم إصدار الفاتورة بنجاح');
@@ -589,6 +597,8 @@ Future<void> _showQuickPaymentDialog(
                 ref.invalidate(
                     dailyReportProvider(ClinicDateUtils.todayString()));
                 ref.invalidate(cashBoxTodayProvider);
+                ref.invalidate(patientProfileProvider(inv.patientId));
+                ref.invalidate(pendingBalancesProvider);
 
                 if (context.mounted)
                   showSnack(context, 'تم تسجيل الدفعة بنجاح');
