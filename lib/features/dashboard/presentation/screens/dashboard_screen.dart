@@ -124,14 +124,9 @@ class DashboardScreen extends ConsumerWidget {
                         // Cash box
                         Expanded(
                           flex: 2,
-                          child: daily.when(
-                            loading: () => const _LoadingCard(),
-                            error: (_, __) => const SizedBox.shrink(),
-                            data: (report) => _CashBoxCard(
-                                    cashBoxAsync: cashBox, report: report)
-                                .animate()
-                                .fadeIn(duration: 400.ms, delay: 140.ms),
-                          ),
+                          child: _CashBoxCard(cashBoxAsync: cashBox)
+                              .animate()
+                              .fadeIn(duration: 400.ms, delay: 140.ms),
                         ),
 
                         const SizedBox(height: AppSpacing.sm),
@@ -987,8 +982,7 @@ class _LowStockCard extends StatelessWidget {
 
 class _CashBoxCard extends StatelessWidget {
   final dynamic cashBoxAsync;
-  final dynamic report;
-  const _CashBoxCard({required this.cashBoxAsync, required this.report});
+  const _CashBoxCard({required this.cashBoxAsync});
 
   @override
   Widget build(BuildContext context) {
