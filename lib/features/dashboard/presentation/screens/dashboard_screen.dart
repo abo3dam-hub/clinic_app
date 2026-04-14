@@ -70,24 +70,28 @@ class DashboardScreen extends ConsumerWidget {
 
                         const SizedBox(height: AppSpacing.sm),
 
-                        // Patient dossier (search + recent)
                         Expanded(
-                          flex: 3,
-                          child: const _PatientDossierCard()
-                              .animate()
-                              .fadeIn(duration: 450.ms, delay: 80.ms)
-                              .slideY(begin: 0.06),
-                        ),
-
-                        const SizedBox(height: AppSpacing.sm),
-
-                        // Pending balances
-                        Expanded(
-                          flex: 4,
-                          child: _PendingPatientsCard(
-                                  balancesAsync: pendingBalances)
-                              .animate()
-                              .fadeIn(duration: 450.ms, delay: 120.ms),
+                          flex: 7,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                flex: 5,
+                                child: const _PatientDossierCard()
+                                    .animate()
+                                    .fadeIn(duration: 450.ms, delay: 80.ms)
+                                    .slideY(begin: 0.06),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                flex: 6,
+                                child: _PendingPatientsCard(
+                                        balancesAsync: pendingBalances)
+                                    .animate()
+                                    .fadeIn(duration: 450.ms, delay: 120.ms),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -584,10 +588,29 @@ class _PatientDossierCardState extends ConsumerState<_PatientDossierCard> {
                         icon: Icons.person_search_outlined);
                   }
                   final recent = list.take(10).toList();
-                  return ListView.builder(
-                    scrollDirection: Axis.horizontal,
+                  return ListView.separated(
                     itemCount: recent.length,
-                    itemBuilder: (_, i) => _DossierShortcut(patient: recent[i]),
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (_, i) {
+                      final patient = recent[i];
+                      return ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                        onTap: () => context.push('/patients/${patient.id}'),
+                        title: Text(patient.name,
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 14)),
+                        subtitle: Text(
+                          patient.phone ?? 'بدون هاتف',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        trailing: Text(
+                          '#${patient.id ?? '-'}',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600, fontSize: 12),
+                        ),
+                      );
+                    },
                   );
                 },
               ),
