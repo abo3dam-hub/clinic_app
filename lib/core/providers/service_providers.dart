@@ -68,10 +68,10 @@ final cashBoxServiceProvider = Provider<CashBoxService>(
     (ref) => CashBoxService(ref.watch(cashBoxRepositoryProvider)));
 
 final pdfExportServiceProvider =
-    Provider<PdfExportService>((_) => PdfExportService(clinicName: 'عيادتي'));
+    Provider<PdfExportService>((_) => PdfExportService(clinicName: 'Liora'));
 
 final excelExportServiceProvider = Provider<ExcelExportService>(
-    (_) => ExcelExportService(clinicName: 'عيادتي'));
+    (_) => ExcelExportService(clinicName: 'Liora'));
 
 // ─── Patients ─────────────────────────────────────────────────────────────────
 

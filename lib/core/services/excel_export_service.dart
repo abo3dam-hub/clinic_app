@@ -138,7 +138,7 @@ class _XL {
 class ExcelExportService {
   final String clinicName;
 
-  ExcelExportService({this.clinicName = 'عيادتي'});
+  ExcelExportService({this.clinicName = 'Liora'});
 
   // ─── Patients Excel ───────────────────────────────────────────
 
@@ -516,7 +516,8 @@ class ExcelExportService {
     _XL.setInfoRow(sheet, 1, 'الفترة من', fromDate);
     _XL.setInfoRow(sheet, 2, 'الفترة إلى', toDate);
 
-    _XL.writeHeaders(sheet, 4, ['الكود', 'الحساب', 'مدين', 'دائن'], widths: [12, 30, 18, 18]);
+    _XL.writeHeaders(sheet, 4, ['الكود', 'الحساب', 'مدين', 'دائن'],
+        widths: [12, 30, 18, 18]);
 
     double totalDr = 0, totalCr = 0;
     for (int i = 0; i < balances.length; i++) {
@@ -524,12 +525,16 @@ class ExcelExportService {
       totalDr += b.totalDebit;
       totalCr += b.totalCredit;
 
-      _XL.writeRow(sheet, 5 + i, [
-        TextCellValue(b.account.code),
-        TextCellValue(b.account.name),
-        TextCellValue('${_XL.fmt(b.totalDebit)} USD'),
-        TextCellValue('${_XL.fmt(b.totalCredit)} USD'),
-      ], even: i.isEven);
+      _XL.writeRow(
+          sheet,
+          5 + i,
+          [
+            TextCellValue(b.account.code),
+            TextCellValue(b.account.name),
+            TextCellValue('${_XL.fmt(b.totalDebit)} USD'),
+            TextCellValue('${_XL.fmt(b.totalCredit)} USD'),
+          ],
+          even: i.isEven);
     }
 
     final totRow = 5 + balances.length + 1;
@@ -556,23 +561,32 @@ class ExcelExportService {
     _XL.writeHeaders(sheet, row, ['الإيرادات', 'المبلغ'], widths: [30, 20]);
     row++;
     for (final l in pl.revenueLines) {
-      _XL.writeRow(sheet, row, [TextCellValue(l.accountName), TextCellValue('${_XL.fmt(l.amount)} USD')]);
+      _XL.writeRow(sheet, row, [
+        TextCellValue(l.accountName),
+        TextCellValue('${_XL.fmt(l.amount)} USD')
+      ]);
       row++;
     }
-    _XL.setTotalRow(sheet, row, 'إجمالي الإيرادات', pl.totalRevenue, bold: true);
+    _XL.setTotalRow(sheet, row, 'إجمالي الإيرادات', pl.totalRevenue,
+        bold: true);
     row += 2;
 
     _XL.writeHeaders(sheet, row, ['المصروفات', 'المبلغ'], widths: [30, 20]);
     row++;
     for (final l in pl.expenseLines) {
-      _XL.writeRow(sheet, row, [TextCellValue(l.accountName), TextCellValue('${_XL.fmt(l.amount)} USD')]);
+      _XL.writeRow(sheet, row, [
+        TextCellValue(l.accountName),
+        TextCellValue('${_XL.fmt(l.amount)} USD')
+      ]);
       row++;
     }
-    _XL.setTotalRow(sheet, row, 'إجمالي المصروفات', pl.totalExpenses, bold: true, isError: true);
+    _XL.setTotalRow(sheet, row, 'إجمالي المصروفات', pl.totalExpenses,
+        bold: true, isError: true);
     row += 2;
 
-    _XL.setTotalRow(sheet, row, pl.netIncome >= 0 ? 'صافي الربح' : 'صافي الخسارة', pl.netIncome.abs(), 
-      bold: true, isError: pl.netIncome < 0);
+    _XL.setTotalRow(sheet, row,
+        pl.netIncome >= 0 ? 'صافي الربح' : 'صافي الخسارة', pl.netIncome.abs(),
+        bold: true, isError: pl.netIncome < 0);
 
     return Uint8List.fromList(excel.encode()!);
   }
@@ -591,25 +605,37 @@ class ExcelExportService {
     _XL.writeHeaders(sheet, row, ['الأصول', 'المبلغ'], widths: [30, 20]);
     row++;
     for (final l in bs.assetLines) {
-      _XL.writeRow(sheet, row, [TextCellValue(l.accountName), TextCellValue('${_XL.fmt(l.amount)} USD')]);
+      _XL.writeRow(sheet, row, [
+        TextCellValue(l.accountName),
+        TextCellValue('${_XL.fmt(l.amount)} USD')
+      ]);
       row++;
     }
     _XL.setTotalRow(sheet, row, 'إجمالي الأصول', bs.totalAssets, bold: true);
     row += 2;
 
-    _XL.writeHeaders(sheet, row, ['الالتزامات وحقوق الملكية', 'المبلغ'], widths: [30, 20]);
+    _XL.writeHeaders(sheet, row, ['الالتزامات وحقوق الملكية', 'المبلغ'],
+        widths: [30, 20]);
     row++;
     for (final l in bs.liabilityLines) {
-      _XL.writeRow(sheet, row, [TextCellValue(l.accountName), TextCellValue('${_XL.fmt(l.amount)} USD')]);
+      _XL.writeRow(sheet, row, [
+        TextCellValue(l.accountName),
+        TextCellValue('${_XL.fmt(l.amount)} USD')
+      ]);
       row++;
     }
     for (final l in bs.equityLines) {
-      _XL.writeRow(sheet, row, [TextCellValue(l.accountName), TextCellValue('${_XL.fmt(l.amount)} USD')]);
+      _XL.writeRow(sheet, row, [
+        TextCellValue(l.accountName),
+        TextCellValue('${_XL.fmt(l.amount)} USD')
+      ]);
       row++;
     }
     _XL.setTotalRow(sheet, row, 'صافي دخل الفترة', bs.netIncome);
     row++;
-    _XL.setTotalRow(sheet, row, 'إجمالي الالتزامات وحقوق الملكية', bs.totalLiabilities + bs.totalEquity, bold: true);
+    _XL.setTotalRow(sheet, row, 'إجمالي الالتزامات وحقوق الملكية',
+        bs.totalLiabilities + bs.totalEquity,
+        bold: true);
 
     return Uint8List.fromList(excel.encode()!);
   }

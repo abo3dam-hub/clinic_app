@@ -186,7 +186,7 @@ class _SumRow {
 class PdfExportService {
   final String clinicName;
 
-  PdfExportService({this.clinicName = 'عيادتي'});
+  PdfExportService({this.clinicName = 'Liora'});
 
   // ─── Invoice PDF ──────────────────────────────────────────────
 
@@ -571,7 +571,8 @@ class PdfExportService {
   // ─── Doctor Revenue PDF ───────────────────────────────────────
 
   Future<Uint8List> generateDoctorRevenuePdf(DoctorRevenueResult result) async {
-    return generateDoctorPerformanceListPdf([result], 'إيرادات الطبيب التفصيلية');
+    return generateDoctorPerformanceListPdf(
+        [result], 'إيرادات الطبيب التفصيلية');
   }
 
   Future<Uint8List> generateDoctorPerformanceListPdf(
@@ -609,14 +610,15 @@ class PdfExportService {
                     ]),
                     ...results.asMap().entries.map((e) {
                       final r = e.value;
-                      return _Pdf.tableDataRow([
-                        r.doctorName,
-                        '${r.totalVisits}',
-                        _Pdf.fmt(r.grossRevenue),
-                        '${r.commissionPct.toStringAsFixed(1)}%',
-                        _Pdf.fmt(r.commissionAmount),
-                        _Pdf.fmt(r.netRevenue),
-                      ],
+                      return _Pdf.tableDataRow(
+                          [
+                            r.doctorName,
+                            '${r.totalVisits}',
+                            _Pdf.fmt(r.grossRevenue),
+                            '${r.commissionPct.toStringAsFixed(1)}%',
+                            _Pdf.fmt(r.commissionAmount),
+                            _Pdf.fmt(r.netRevenue),
+                          ],
                           even: e.key.isEven,
                           cellColors: [
                             null,
@@ -659,7 +661,8 @@ class PdfExportService {
         pageFormat: PdfPageFormat.a4,
         textDirection: pw.TextDirection.rtl,
         margin: pw.EdgeInsets.zero,
-        header: (ctx) => _Pdf.header(clinicName, 'ميزان المراجعة', '$fromDate — $toDate'),
+        header: (ctx) =>
+            _Pdf.header(clinicName, 'ميزان المراجعة', '$fromDate — $toDate'),
         footer: (ctx) => _Pdf.footer(ctx.pageNumber, ctx.pagesCount),
         build: (ctx) => [
           pw.Padding(
@@ -671,7 +674,8 @@ class PdfExportService {
                 pw.Table(
                   border: pw.TableBorder.all(color: _Pdf.border, width: 0.5),
                   children: [
-                    _Pdf.tableHeaderRow(['الكود', 'الحساب', 'النوع', 'مدين', 'دائن']),
+                    _Pdf.tableHeaderRow(
+                        ['الكود', 'الحساب', 'النوع', 'مدين', 'دائن']),
                     ...balances.asMap().entries.map((e) {
                       final b = e.value;
                       return _Pdf.tableDataRow([
@@ -683,13 +687,22 @@ class PdfExportService {
                       ], even: e.key.isEven);
                     }),
                     // Totals Row
-                    _Pdf.tableDataRow([
-                      '',
-                      'الإجمالي',
-                      '',
-                      _Pdf.fmt(totalDr),
-                      _Pdf.fmt(totalCr),
-                    ], even: false, cellColors: [null, _Pdf.textDark, null, _Pdf.primary, _Pdf.secondary]),
+                    _Pdf.tableDataRow(
+                        [
+                          '',
+                          'الإجمالي',
+                          '',
+                          _Pdf.fmt(totalDr),
+                          _Pdf.fmt(totalCr),
+                        ],
+                        even: false,
+                        cellColors: [
+                          null,
+                          _Pdf.textDark,
+                          null,
+                          _Pdf.primary,
+                          _Pdf.secondary
+                        ]),
                   ],
                 ),
               ],
@@ -714,7 +727,8 @@ class PdfExportService {
         pageFormat: PdfPageFormat.a4,
         textDirection: pw.TextDirection.rtl,
         margin: pw.EdgeInsets.zero,
-        header: (ctx) => _Pdf.header(clinicName, 'قائمة الدخل', '${pl.fromDate} — ${pl.toDate}'),
+        header: (ctx) => _Pdf.header(
+            clinicName, 'قائمة الدخل', '${pl.fromDate} — ${pl.toDate}'),
         footer: (ctx) => _Pdf.footer(ctx.pageNumber, ctx.pagesCount),
         build: (ctx) => [
           pw.Padding(
@@ -724,19 +738,29 @@ class PdfExportService {
               children: [
                 pw.SizedBox(height: 16),
                 _Pdf.sectionTitle('الإيرادات'),
-                _Pdf.summaryCard(pl.revenueLines.map((l) => _SumRow(l.accountName, _Pdf.fmt(l.amount))).toList()),
+                _Pdf.summaryCard(pl.revenueLines
+                    .map((l) => _SumRow(l.accountName, _Pdf.fmt(l.amount)))
+                    .toList()),
                 pw.SizedBox(height: 8),
-                _Pdf.summaryCard([_SumRow('إجمالي الإيرادات', _Pdf.fmt(pl.totalRevenue), bold: true, color: _Pdf.secondary)]),
-                
+                _Pdf.summaryCard([
+                  _SumRow('إجمالي الإيرادات', _Pdf.fmt(pl.totalRevenue),
+                      bold: true, color: _Pdf.secondary)
+                ]),
                 _Pdf.sectionTitle('المصروفات'),
-                _Pdf.summaryCard(pl.expenseLines.map((l) => _SumRow(l.accountName, _Pdf.fmt(l.amount))).toList()),
+                _Pdf.summaryCard(pl.expenseLines
+                    .map((l) => _SumRow(l.accountName, _Pdf.fmt(l.amount)))
+                    .toList()),
                 pw.SizedBox(height: 8),
-                _Pdf.summaryCard([_SumRow('إجمالي المصروفات', _Pdf.fmt(pl.totalExpenses), bold: true, color: _Pdf.errorClr)]),
-                
+                _Pdf.summaryCard([
+                  _SumRow('إجمالي المصروفات', _Pdf.fmt(pl.totalExpenses),
+                      bold: true, color: _Pdf.errorClr)
+                ]),
                 pw.SizedBox(height: 24),
                 _Pdf.summaryCard([
-                  _SumRow(pl.netIncome >= 0 ? 'صافي الربح' : 'صافي الخسارة', _Pdf.fmt(pl.netIncome.abs()), 
-                    bold: true, color: pl.netIncome >= 0 ? _Pdf.secondary : _Pdf.errorClr)
+                  _SumRow(pl.netIncome >= 0 ? 'صافي الربح' : 'صافي الخسارة',
+                      _Pdf.fmt(pl.netIncome.abs()),
+                      bold: true,
+                      color: pl.netIncome >= 0 ? _Pdf.secondary : _Pdf.errorClr)
                 ]),
               ],
             ),
@@ -760,7 +784,8 @@ class PdfExportService {
         pageFormat: PdfPageFormat.a4,
         textDirection: pw.TextDirection.rtl,
         margin: pw.EdgeInsets.zero,
-        header: (ctx) => _Pdf.header(clinicName, 'الميزانية العمومية', 'كما في تاريخ ${bs.asOfDate}'),
+        header: (ctx) => _Pdf.header(
+            clinicName, 'الميزانية العمومية', 'كما في تاريخ ${bs.asOfDate}'),
         footer: (ctx) => _Pdf.footer(ctx.pageNumber, ctx.pagesCount),
         build: (ctx) => [
           pw.Padding(
@@ -770,23 +795,41 @@ class PdfExportService {
               children: [
                 pw.SizedBox(height: 16),
                 _Pdf.sectionTitle('الأصول'),
-                _Pdf.summaryCard(bs.assetLines.map((l) => _SumRow(l.accountName, _Pdf.fmt(l.amount))).toList()),
+                _Pdf.summaryCard(bs.assetLines
+                    .map((l) => _SumRow(l.accountName, _Pdf.fmt(l.amount)))
+                    .toList()),
                 pw.SizedBox(height: 4),
-                _Pdf.summaryCard([_SumRow('إجمالي الأصول', _Pdf.fmt(bs.totalAssets), bold: true, color: _Pdf.primary)]),
-
+                _Pdf.summaryCard([
+                  _SumRow('إجمالي الأصول', _Pdf.fmt(bs.totalAssets),
+                      bold: true, color: _Pdf.primary)
+                ]),
                 _Pdf.sectionTitle('الالتزامات وحقوق الملكية'),
                 _Pdf.summaryCard([
-                  ...bs.liabilityLines.map((l) => _SumRow(l.accountName, _Pdf.fmt(l.amount))),
-                  ...bs.equityLines.map((l) => _SumRow(l.accountName, _Pdf.fmt(l.amount))),
-                  _SumRow('صافي دخل الفترة', _Pdf.fmt(bs.netIncome), color: bs.netIncome >= 0 ? _Pdf.secondary : _Pdf.errorClr),
+                  ...bs.liabilityLines
+                      .map((l) => _SumRow(l.accountName, _Pdf.fmt(l.amount))),
+                  ...bs.equityLines
+                      .map((l) => _SumRow(l.accountName, _Pdf.fmt(l.amount))),
+                  _SumRow('صافي دخل الفترة', _Pdf.fmt(bs.netIncome),
+                      color:
+                          bs.netIncome >= 0 ? _Pdf.secondary : _Pdf.errorClr),
                 ]),
                 pw.SizedBox(height: 4),
-                _Pdf.summaryCard([_SumRow('إجمالي الالتزامات وحقوق الملكية', _Pdf.fmt(bs.totalLiabilities + bs.totalEquity), bold: true, color: _Pdf.primary)]),
-
+                _Pdf.summaryCard([
+                  _SumRow('إجمالي الالتزامات وحقوق الملكية',
+                      _Pdf.fmt(bs.totalLiabilities + bs.totalEquity),
+                      bold: true, color: _Pdf.primary)
+                ]),
                 pw.SizedBox(height: 32),
                 pw.Center(
-                  child: pw.Text(bs.isBalanced ? 'الميزانية متوازنة ✓' : 'تنبيه: الميزانية غير متوازنة ✗',
-                    style: _Pdf.style(size: 12, bold: true, color: bs.isBalanced ? _Pdf.secondary : _Pdf.errorClr)),
+                  child: pw.Text(
+                      bs.isBalanced
+                          ? 'الميزانية متوازنة ✓'
+                          : 'تنبيه: الميزانية غير متوازنة ✗',
+                      style: _Pdf.style(
+                          size: 12,
+                          bold: true,
+                          color:
+                              bs.isBalanced ? _Pdf.secondary : _Pdf.errorClr)),
                 ),
               ],
             ),

@@ -27,8 +27,8 @@ class SettingsRepository {
 
   Future<String?> get(String key) async {
     await _ensureTable();
-    final rows = await _db.query(_table,
-        where: 'key = ?', whereArgs: [key], limit: 1);
+    final rows =
+        await _db.query(_table, where: 'key = ?', whereArgs: [key], limit: 1);
     return rows.isEmpty ? null : rows.first['value'] as String;
   }
 
@@ -49,11 +49,11 @@ class SettingsRepository {
 
 // ─── Providers ────────────────────────────────────────────────
 
-final settingsRepositoryProvider = Provider<SettingsRepository>((ref) =>
-    SettingsRepository(ref.watch(databaseHelperProvider)));
+final settingsRepositoryProvider = Provider<SettingsRepository>(
+    (ref) => SettingsRepository(ref.watch(databaseHelperProvider)));
 
-final settingsProvider = FutureProvider<Map<String, String>>((ref) =>
-    ref.watch(settingsRepositoryProvider).getAll());
+final settingsProvider = FutureProvider<Map<String, String>>(
+    (ref) => ref.watch(settingsRepositoryProvider).getAll());
 
 // ─── Screen ───────────────────────────────────────────────────
 
@@ -65,12 +65,12 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  final _clinicNameCtrl  = TextEditingController();
+  final _clinicNameCtrl = TextEditingController();
   final _clinicPhoneCtrl = TextEditingController();
-  final _clinicAddrCtrl  = TextEditingController();
-  final _doctorNameCtrl  = TextEditingController();
+  final _clinicAddrCtrl = TextEditingController();
+  final _doctorNameCtrl = TextEditingController();
   bool _loading = false;
-  bool _saved   = false;
+  bool _saved = false;
 
   @override
   void initState() {
@@ -89,21 +89,24 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _loadSettings() async {
     final repo = ref.read(settingsRepositoryProvider);
-    _clinicNameCtrl.text  = await repo.get('clinic_name')    ?? 'عيادتي';
-    _clinicPhoneCtrl.text = await repo.get('clinic_phone')   ?? '';
-    _clinicAddrCtrl.text  = await repo.get('clinic_address') ?? '';
-    _doctorNameCtrl.text  = await repo.get('doctor_name')    ?? '';
+    _clinicNameCtrl.text = await repo.get('clinic_name') ?? 'Liora';
+    _clinicPhoneCtrl.text = await repo.get('clinic_phone') ?? '';
+    _clinicAddrCtrl.text = await repo.get('clinic_address') ?? '';
+    _doctorNameCtrl.text = await repo.get('doctor_name') ?? '';
     if (mounted) setState(() {});
   }
 
   Future<void> _save() async {
-    setState(() { _loading = true; _saved = false; });
+    setState(() {
+      _loading = true;
+      _saved = false;
+    });
     try {
       final repo = ref.read(settingsRepositoryProvider);
-      await repo.set('clinic_name',    _clinicNameCtrl.text.trim());
-      await repo.set('clinic_phone',   _clinicPhoneCtrl.text.trim());
+      await repo.set('clinic_name', _clinicNameCtrl.text.trim());
+      await repo.set('clinic_phone', _clinicPhoneCtrl.text.trim());
       await repo.set('clinic_address', _clinicAddrCtrl.text.trim());
-      await repo.set('doctor_name',    _doctorNameCtrl.text.trim());
+      await repo.set('doctor_name', _doctorNameCtrl.text.trim());
       ref.invalidate(settingsProvider);
       setState(() => _saved = true);
       if (mounted) showSnack(context, 'تم حفظ الإعدادات');
@@ -123,7 +126,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 // ── Clinic Info ──────────────────────────────────
                 AppCard(
                   child: Column(
@@ -132,14 +134,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       const SectionHeader(title: 'بيانات العيادة'),
                       const SizedBox(height: AppSpacing.lg),
                       AppTextField(
-                        label: 'اسم العيادة', required: true,
+                        label: 'اسم العيادة',
+                        required: true,
                         controller: _clinicNameCtrl,
                         prefix: const Icon(Icons.local_hospital_outlined,
                             size: 18, color: AppColors.primary),
                       ),
                       const SizedBox(height: AppSpacing.md),
                       Row(children: [
-                        Expanded(child: AppTextField(
+                        Expanded(
+                            child: AppTextField(
                           label: 'رقم الهاتف',
                           controller: _clinicPhoneCtrl,
                           keyboardType: TextInputType.phone,
@@ -147,7 +151,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               size: 18, color: AppColors.textSecondary),
                         )),
                         const SizedBox(width: AppSpacing.md),
-                        Expanded(child: AppTextField(
+                        Expanded(
+                            child: AppTextField(
                           label: 'اسم الطبيب الرئيسي',
                           controller: _doctorNameCtrl,
                           prefix: const Icon(Icons.person_outline,
@@ -174,14 +179,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       const SectionHeader(title: 'معلومات التطبيق'),
                       const SizedBox(height: AppSpacing.md),
-                      const _InfoTile(icon: Icons.info_outline,
-                          label: 'الإصدار',        value: '1.0.0'),
-                      const _InfoTile(icon: Icons.storage_outlined,
-                          label: 'قاعدة البيانات', value: 'SQLite (محلي)'),
-                      const _InfoTile(icon: Icons.language,
-                          label: 'اللغة',          value: 'العربية'),
-                      const _InfoTile(icon: Icons.palette_outlined,
-                          label: 'الثيم',          value: 'Material 3'),
+                      const _InfoTile(
+                          icon: Icons.info_outline,
+                          label: 'الإصدار',
+                          value: '2.3.0'),
+                      const _InfoTile(
+                          icon: Icons.storage_outlined,
+                          label: 'قاعدة البيانات',
+                          value: 'SQLite (محلي)'),
+                      const _InfoTile(
+                          icon: Icons.language,
+                          label: 'اللغة',
+                          value: 'العربية'),
+                      const _InfoTile(
+                          icon: Icons.palette_outlined,
+                          label: 'تطوير',
+                          value: 'Ali.Jm +963 933 178 794'),
                     ],
                   ),
                 ),
@@ -237,7 +250,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _vacuum(BuildContext ctx) async {
     final ok = await ConfirmDialog.show(ctx,
-        title:   'ضغط قاعدة البيانات',
+        title: 'ضغط قاعدة البيانات',
         message: 'سيتم تنظيف قاعدة البيانات وضغطها. قد يستغرق ذلك بضع ثوانٍ.');
     if (ok && ctx.mounted) {
       try {
