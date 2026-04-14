@@ -1011,46 +1011,75 @@ class _CashBoxCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat('#,##0.0', 'ar');
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return cashBoxAsync.when(
+      loading: () => const AppCard(
+        child: Center(child: LoadingView()),
+      ),
+      error: (e, _) => AppCard(
+        child: ErrorView(message: e.toString()),
+      ),
+      data: (box) => AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SectionHeader(title: 'حالة الصندوق'),
+            const SizedBox(height: AppSpacing.sm),
+            _CashBoxLine(
+              label: 'الرصيد الحالي',
+              value: '${fmt.format(box.calculatedClosingBalance)} \$',
+            ),
+            _CashBoxLine(
+              label: 'الرصيد الافتتاحي',
+              value: '${fmt.format(box.openingBalance)} \$',
+            ),
+            _CashBoxLine(
+              label: 'إجمالي الدخل',
+              value: '${fmt.format(box.totalIncome)} \$',
+            ),
+            _CashBoxLine(
+              label: 'إجمالي المصروفات',
+              value: '${fmt.format(box.totalExpenses)} \$',
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            PrimaryButton(
+              label: 'تفاصيل الصندوق',
+              compact: true,
+              onPressed: () => context.push('/cash-box'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CashBoxLine extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _CashBoxLine({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const SectionHeader(title: 'حالة الصندوق'),
-          const SizedBox(height: AppSpacing.sm),
-          Expanded(
-            child: cashBoxAsync.when(
-              loading: () => const LoadingView(),
-              error: (e, _) => ErrorView(message: e.toString()),
-              data: (box) => Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('الرصيد الحالي',
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w600)),
-                      Text(
-                        '${fmt.format(box.calculatedClosingBalance)} \$',
-                        style: const TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 15),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: PrimaryButton(
-                      label: 'إغلاق الصندوق',
-                      compact: true,
-                      onPressed: () => context.push('/cash-box'),
-                    ),
-                  ),
-                ],
-              ),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.primary,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
