@@ -114,7 +114,7 @@ class _ProfileHeader extends StatelessWidget {
                         size: 14, color: AppColors.textHint),
                     const SizedBox(width: 4),
                     Text(
-                        'مسجل منذ: ${DateFormat('yyyy-MM-dd').format(profile.patient.createdAt)}',
+                        'مسجل منذ: ${ClinicDateUtils.formatArabicMonth(profile.patient.createdAt, 'd MMMM yyyy')}',
                         style: TextStyle(
                             color: AppColors.textSecondary,
                             fontWeight: FontWeight.w500)),

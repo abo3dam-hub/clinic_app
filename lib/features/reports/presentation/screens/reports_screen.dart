@@ -278,18 +278,18 @@ class _MonthlyTab extends ConsumerWidget {
 
   String _monthName(int m) => [
         '',
-        'يناير',
-        'فبراير',
-        'مارس',
-        'إبريل',
-        'مايو',
-        'يونيو',
-        'يوليو',
-        'أغسطس',
-        'سبتمبر',
-        'أكتوبر',
-        'نوفمبر',
-        'ديسمبر'
+        'كانون الثاني',
+        'شباط',
+        'آذار',
+        'نيسان',
+        'أيار',
+        'حزيران',
+        'تموز',
+        'آب',
+        'أيلول',
+        'تشرين الأول',
+        'تشرين الثاني',
+        'كانون الأول'
       ][m];
 }
 
@@ -371,8 +371,8 @@ class _DoctorPerfTab extends ConsumerWidget {
               children: [
                 ExportButton(
                   fileName: 'doctors_perf_$year',
-                  onExportPdf: (svc) =>
-                      svc.generateDoctorPerformanceListPdf(doctors, 'أداء الأطباء لعام $year'),
+                  onExportPdf: (svc) => svc.generateDoctorPerformanceListPdf(
+                      doctors, 'أداء الأطباء لعام $year'),
                   onExportExcel: () => ref
                       .read(excelExportServiceProvider)
                       .generateDoctorRevenueExcel(doctors),
@@ -388,7 +388,8 @@ class _DoctorPerfTab extends ConsumerWidget {
             error: (e, _) => ErrorView(message: e.toString()),
             data: (doctors) => doctors.isEmpty
                 ? const EmptyState(
-                    title: 'لا توجد بيانات', icon: Icons.medical_services_outlined)
+                    title: 'لا توجد بيانات',
+                    icon: Icons.medical_services_outlined)
                 : AppTable(
                     headers: const [
                       'الطبيب',
@@ -401,8 +402,8 @@ class _DoctorPerfTab extends ConsumerWidget {
                     rows: doctors
                         .map((d) => [
                               Text(d.doctorName,
-                                  style:
-                                      const TextStyle(fontWeight: FontWeight.w600)),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600)),
                               Text('${d.totalVisits}'),
                               Text('${fmt.format(d.grossRevenue)} USD',
                                   style: const TextStyle(
@@ -410,7 +411,8 @@ class _DoctorPerfTab extends ConsumerWidget {
                                       fontWeight: FontWeight.w600)),
                               Text('${d.commissionPct.toStringAsFixed(1)}%'),
                               Text('${fmt.format(d.commissionAmount)} USD',
-                                  style: const TextStyle(color: AppColors.warning)),
+                                  style: const TextStyle(
+                                      color: AppColors.warning)),
                               Text('${fmt.format(d.netRevenue)} USD',
                                   style: const TextStyle(
                                       color: AppColors.primary,
