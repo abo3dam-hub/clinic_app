@@ -8,7 +8,7 @@ import 'package:clinic_app/core/theme/app_theme.dart';
 import 'package:clinic_app/core/utils/date_utils.dart';
 import 'package:clinic_app/shared/widgets/app_widgets.dart';
 import 'package:clinic_app/features/patients/domain/entities/patient.dart';
-
+import 'package:clinic_app/features/cash_box/domain/entities/cash_box.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 // Root Screen ali reset
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1005,50 +1005,112 @@ class _LowStockCard extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _CashBoxCard extends StatelessWidget {
-  final dynamic cashBoxAsync;
+  final AsyncValue<CashBox>
+      cashBoxAsync; // تم تحديد النوع بدقة بناءً على ملف الـ Providers
   const _CashBoxCard({required this.cashBoxAsync});
 
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat('#,##0.0', 'ar');
+
     return cashBoxAsync.when(
-      loading: () => const AppCard(
-        child: Center(child: LoadingView()),
-      ),
-      error: (e, _) => AppCard(
-        child: ErrorView(message: e.toString()),
-      ),
-      data: (box) => AppCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SectionHeader(title: 'حالة الصندوق'),
-            const SizedBox(height: AppSpacing.sm),
-            _CashBoxLine(
-              label: 'الرصيد الحالي',
-              value: '${fmt.format(box.calculatedClosingBalance)} \$',
-            ),
-            _CashBoxLine(
-              label: 'الرصيد الافتتاحي',
-              value: '${fmt.format(box.openingBalance)} \$',
-            ),
-            _CashBoxLine(
-              label: 'إجمالي الدخل',
-              value: '${fmt.format(box.totalIncome)} \$',
-            ),
-            _CashBoxLine(
-              label: 'إجمالي المصروفات',
-              value: '${fmt.format(box.totalExpenses)} \$',
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            PrimaryButton(
-              label: 'تفاصيل الصندوق',
-              compact: true,
-              onPressed: () => context.push('/cash-box'),
-            ),
-          ],
-        ),
-      ),
+      loading: () => const _LoadingCard(),
+      error: (e, _) => AppCard(child: ErrorView(message: e.toString())),
+      data: (box) {
+        final closing = box.calculatedClosingBalance;
+
+        return AppCard(
+          // يتغير اللون بناءً على حالة الصندوق (ربح/خسارة)
+          color: closing >= 0
+              ? AppColors.secondarySurface
+              : AppColors.errorSurface,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SectionHeader(title: 'حالة الصندوق'),
+              const Spacer(),
+
+              // استخدام Row مع Flexible لمنع الـ Overflow (سبب المربع الرمادي)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Flexible(
+                    child: Text(
+                      'الرصيد المحسوب',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11, // تصغير الخط ليتناسب مع السايد بار
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  FittedBox(
+                    // يضمن تصغير الرقم إذا كان كبيراً جداً
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      '${fmt.format(closing)} \$',
+                      style: TextStyle(
+                        color:
+                            closing >= 0 ? AppColors.success : AppColors.error,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: AppSpacing.sm),
+
+              // شريط الحالة البصري
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: box.totalIncome > 0
+                      ? (box.totalExpenses / box.totalIncome).clamp(0.0, 1.0)
+                      : 0.0,
+                  backgroundColor: AppColors.success.withValues(alpha: 0.2),
+                  valueColor: const AlwaysStoppedAnimation(AppColors.error),
+                  minHeight: 6,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              // الإيرادات والمصروفات بشكل مدمج
+              Row(
+                children: [
+                  Expanded(
+                    child: Text('إيراد: ${fmt.format(box.totalIncome)}',
+                        style: const TextStyle(
+                            color: AppColors.success,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                  Expanded(
+                    child: Text('صرف: ${fmt.format(box.totalExpenses)}',
+                        textAlign: TextAlign.left,
+                        style: const TextStyle(
+                            color: AppColors.error,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+
+              const Spacer(),
+
+              PrimaryButton(
+                label: 'التفاصيل',
+                compact: true,
+                onPressed: () => context.push('/cash-box'),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

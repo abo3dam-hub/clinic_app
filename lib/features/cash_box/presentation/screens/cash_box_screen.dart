@@ -201,7 +201,7 @@ class _ClosingCard extends StatelessWidget {
       color: closing >= 0 ? AppColors.secondarySurface : AppColors.errorSurface,
       child: Column(children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          const Text('الرصيد الختامي المحسوب',
+          const Text('الصندوق ',
               style: TextStyle(
                   color: AppColors.textSecondary,
                   fontWeight: FontWeight.w600,
