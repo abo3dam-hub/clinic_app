@@ -453,12 +453,6 @@ class _IncomeStatementTab extends ConsumerWidget {
 
   Future<void> _showAccountLedgerDialog(BuildContext context, WidgetRef ref,
       int accountId, AccountingPeriod period) async {
-    final ledgerAsync = ref.watch(accountLedgerProvider({
-      'accountId': accountId,
-      'fromDate': period.fromDate,
-      'toDate': period.toDate,
-    }));
-
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -466,37 +460,45 @@ class _IncomeStatementTab extends ConsumerWidget {
         content: SizedBox(
           width: 600,
           height: 400,
-          child: ledgerAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('خطأ: $e')),
-            data: (entries) => entries.isEmpty
-                ? const Center(child: Text('لا توجد حركات'))
-                : SingleChildScrollView(
-                    child: AppTable(
-                      headers: const [
-                        'التاريخ',
-                        'الوصف',
-                        'المرجع',
-                        'مدين',
-                        'دائن',
-                        'الرصيد'
-                      ],
-                      rows: entries
-                          .map((e) => [
-                                Text(e.date),
-                                Text(e.description),
-                                Text(e.reference ?? '-'),
-                                Text(
-                                    '\$${NumberFormat('#,##0.00', 'en').format(e.debit)}'),
-                                Text(
-                                    '\$${NumberFormat('#,##0.00', 'en').format(e.credit)}'),
-                                Text(
-                                    '\$${NumberFormat('#,##0.00', 'en').format(e.runningBalance)}'),
-                              ])
-                          .toList(),
+          child: Consumer(builder: (context, dialogRef, _) {
+            final ledgerAsync = dialogRef.watch(accountLedgerProvider({
+              'accountId': accountId,
+              'fromDate': period.fromDate,
+              'toDate': period.toDate,
+            }));
+
+            return ledgerAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('خطأ: $e')),
+              data: (entries) => entries.isEmpty
+                  ? const Center(child: Text('لا توجد حركات'))
+                  : SingleChildScrollView(
+                      child: AppTable(
+                        headers: const [
+                          'التاريخ',
+                          'الوصف',
+                          'المرجع',
+                          'مدين',
+                          'دائن',
+                          'الرصيد'
+                        ],
+                        rows: entries
+                            .map((e) => [
+                                  Text(e.date),
+                                  Text(e.description),
+                                  Text(e.reference ?? '-'),
+                                  Text(
+                                      '\$${NumberFormat('#,##0.00', 'en').format(e.debit)}'),
+                                  Text(
+                                      '\$${NumberFormat('#,##0.00', 'en').format(e.credit)}'),
+                                  Text(
+                                      '\$${NumberFormat('#,##0.00', 'en').format(e.runningBalance)}'),
+                                ])
+                            .toList(),
+                      ),
                     ),
-                  ),
-          ),
+            );
+          }),
         ),
         actions: [
           TextButton(
