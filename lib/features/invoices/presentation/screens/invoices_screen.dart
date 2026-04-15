@@ -142,8 +142,8 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                                       IconActionButton(
                                         icon: Icons.edit_outlined,
                                         tooltip: 'تعديل',
-                                        onPressed: () => context
-                                            .go('/invoices/${inv.id}'),
+                                        onPressed: () =>
+                                            context.go('/invoices/${inv.id}'),
                                         color: AppColors.primary,
                                         bgColor: AppColors.primarySurface,
                                       ),
