@@ -107,7 +107,7 @@ class DashboardScreen extends ConsumerWidget {
                       children: [
                         // Appointments
                         Expanded(
-                          flex: 3,
+                          flex: 4,
                           child: _AppointmentsCard(apptCounts: apptCounts)
                               .animate()
                               .fadeIn(duration: 400.ms, delay: 60.ms),
@@ -117,7 +117,7 @@ class DashboardScreen extends ConsumerWidget {
 
                         // Low stock
                         Expanded(
-                          flex: 2,
+                          flex: 3,
                           child: _LowStockCard(lowStockAsync: lowStock)
                               .animate()
                               .fadeIn(duration: 400.ms, delay: 100.ms),
@@ -127,24 +127,10 @@ class DashboardScreen extends ConsumerWidget {
 
                         // Cash box
                         Expanded(
-                          flex: 2,
+                          flex: 3,
                           child: _CashBoxCard(cashBoxAsync: cashBox)
                               .animate()
                               .fadeIn(duration: 400.ms, delay: 140.ms),
-                        ),
-
-                        const SizedBox(height: AppSpacing.sm),
-
-                        // Doctor stats
-                        Expanded(
-                          flex: 3,
-                          child: daily.when(
-                            loading: () => const _LoadingCard(),
-                            error: (_, __) => const SizedBox.shrink(),
-                            data: (report) => _DoctorStatsCard(report: report)
-                                .animate()
-                                .fadeIn(duration: 400.ms, delay: 180.ms),
-                          ),
                         ),
                       ],
                     ),
@@ -847,9 +833,15 @@ class _AppointmentsCard extends StatelessWidget {
                 final total = pending + confirmed + completed;
 
                 if (total == 0) {
-                  return const EmptyState(
-                      title: 'لا يوجد مواعيد',
-                      icon: Icons.calendar_today_outlined);
+                  return const Center(
+                    child: Text(
+                      'لا يوجد مواعيد',
+                      style: TextStyle(
+                          color: AppColors.textHint,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w600),
+                    ),
+                  );
                 }
 
                 return Column(
@@ -1036,7 +1028,7 @@ class _CashBoxCard extends StatelessWidget {
                 children: [
                   const Flexible(
                     child: Text(
-                      'الرصيد المحسوب',
+                      'رصيد الصندوق ',
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w600,
@@ -1143,68 +1135,6 @@ class _CashBoxLine extends StatelessWidget {
               color: AppColors.primary,
               fontWeight: FontWeight.w900,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Doctor Stats Card (sidebar)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _DoctorStatsCard extends StatelessWidget {
-  final dynamic report;
-  const _DoctorStatsCard({required this.report});
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SectionHeader(title: 'أداء الأطباء'),
-          const SizedBox(height: AppSpacing.sm),
-          Expanded(
-            child: report.doctorStats.isEmpty
-                ? const Center(
-                    child: EmptyState(
-                        title: 'لا يوجد بيانات',
-                        icon: Icons.medical_services_outlined))
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: (report.doctorStats as List)
-                        .take(3)
-                        .map<Widget>((s) => Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 2),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.person_pin,
-                                      size: 14, color: AppColors.textHint),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                      child: Text(s.doctorName,
-                                          style: const TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600),
-                                          overflow: TextOverflow.ellipsis)),
-                                  Text('${s.visits} زيارة',
-                                      style: const TextStyle(
-                                          color: AppColors.primary,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold)),
-                                ],
-                              ),
-                            ))
-                        .toList(),
-                  ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          SecondaryButton(
-            label: 'تقرير الأداء',
-            compact: true,
-            onPressed: () => context.push('/reports'),
           ),
         ],
       ),
