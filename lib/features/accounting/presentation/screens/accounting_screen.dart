@@ -102,6 +102,19 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen>
         ),
         const SizedBox(height: AppSpacing.md),
 
+        // ── Refresh Button ───────────────────────────────────────
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            SecondaryButton(
+              label: 'تحديث',
+              icon: Icons.refresh,
+              onPressed: () => _refreshAll(ref, period),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+
         // ── Tabs ─────────────────────────────────────────────────
         AppCard(
           padding: EdgeInsets.zero,
@@ -196,6 +209,12 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen>
       if (context.mounted)
         showSnack(context, 'خطأ أثناء التصدير: $e', error: true);
     }
+  }
+
+  void _refreshAll(WidgetRef ref, AccountingPeriod period) {
+    ref.invalidate(trialBalanceProvider(period));
+    ref.invalidate(incomeStatementProvider(period));
+    ref.invalidate(balanceSheetProvider(period.toDate));
   }
 
   String _safeName(String s) => s.replaceAll('-', '_');

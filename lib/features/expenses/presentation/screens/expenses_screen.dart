@@ -8,6 +8,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_utils.dart';
 import '../../../../shared/widgets/app_widgets.dart';
 import '../../../invoices/domain/entities/invoice.dart';
+import '../../../accounting/presentation/screens/accounting_screen.dart';
 
 // ─── Local providers ──────────────────────────────────────────
 
@@ -281,6 +282,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                       '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
                   ref.invalidate(dailyReportProvider(todayStr));
                   ref.invalidate(cashBoxTodayProvider);
+                  // Invalidate accounting providers
+                  ref.invalidate(trialBalanceProvider(AccountingPeriod(fromDate: '2020-01-01', toDate: DateTime.now().toIso8601String().split('T')[0])));
+                  ref.invalidate(incomeStatementProvider(AccountingPeriod(fromDate: '2020-01-01', toDate: DateTime.now().toIso8601String().split('T')[0])));
+                  ref.invalidate(balanceSheetProvider(DateTime.now().toIso8601String().split('T')[0]));
                 } catch (e) {
                   if (ctx.mounted) showSnack(ctx, 'خطأ: $e', error: true);
                 }
@@ -308,6 +313,10 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
             '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
         ref.invalidate(dailyReportProvider(todayStr));
         ref.invalidate(cashBoxTodayProvider);
+        // Invalidate accounting providers
+        ref.invalidate(trialBalanceProvider(AccountingPeriod(fromDate: '2020-01-01', toDate: DateTime.now().toIso8601String().split('T')[0])));
+        ref.invalidate(incomeStatementProvider(AccountingPeriod(fromDate: '2020-01-01', toDate: DateTime.now().toIso8601String().split('T')[0])));
+        ref.invalidate(balanceSheetProvider(DateTime.now().toIso8601String().split('T')[0]));
         if (ctx.mounted) showSnack(ctx, 'تم الحذف');
       } catch (e) {
         if (ctx.mounted) showSnack(ctx, 'خطأ: $e', error: true);

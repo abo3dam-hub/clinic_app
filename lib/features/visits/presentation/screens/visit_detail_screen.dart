@@ -25,6 +25,7 @@ import '../../domain/entities/visit.dart';
 import '../../../invoices/domain/entities/invoice.dart';
 import '../../../inventory/domain/entities/inventory.dart';
 import '../../../procedures/domain/entities/procedure.dart';
+import '../../../accounting/presentation/screens/accounting_screen.dart';
 
 // ─── Provider for a single visit ─────────────────────────────────────────────
 final visitByIdProvider = FutureProvider.family<Visit?, int>(
@@ -656,6 +657,10 @@ class _ProceduresCard extends ConsumerWidget {
       ref.invalidate(patientProfileProvider(visit.patientId));
       ref.invalidate(pendingBalancesProvider);
       ref.invalidate(dailyReportProvider(today));
+      // Invalidate accounting providers
+      ref.invalidate(trialBalanceProvider(AccountingPeriod(fromDate: '2020-01-01', toDate: DateTime.now().toIso8601String().split('T')[0])));
+      ref.invalidate(incomeStatementProvider(AccountingPeriod(fromDate: '2020-01-01', toDate: DateTime.now().toIso8601String().split('T')[0])));
+      ref.invalidate(balanceSheetProvider(DateTime.now().toIso8601String().split('T')[0]));
 
       if (context.mounted) {
         showSnack(context,
@@ -699,6 +704,10 @@ class _ProceduresCard extends ConsumerWidget {
       ref.invalidate(patientProfileProvider(visit.patientId));
       ref.invalidate(pendingBalancesProvider);
       ref.invalidate(dailyReportProvider(today));
+      // Invalidate accounting providers
+      ref.invalidate(trialBalanceProvider(AccountingPeriod(fromDate: '2020-01-01', toDate: DateTime.now().toIso8601String().split('T')[0])));
+      ref.invalidate(incomeStatementProvider(AccountingPeriod(fromDate: '2020-01-01', toDate: DateTime.now().toIso8601String().split('T')[0])));
+      ref.invalidate(balanceSheetProvider(DateTime.now().toIso8601String().split('T')[0]));
 
       if (context.mounted) showSnack(context, 'تم حذف الإجراء');
     } catch (e) {
