@@ -469,6 +469,12 @@ class _NestedVisitItem extends StatelessWidget {
                           style:
                               const TextStyle(color: AppColors.textSecondary)),
                     ],
+                    if (visit.notes != null) ...[
+                      const SizedBox(height: 8),
+                      Text('ملاحظات: ${visit.notes}',
+                          style:
+                              const TextStyle(color: AppColors.textSecondary)),
+                    ],
                     const SizedBox(height: AppSpacing.md),
 
                     // Procedures Section

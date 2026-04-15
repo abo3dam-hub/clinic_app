@@ -143,7 +143,7 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                                         icon: Icons.edit_outlined,
                                         tooltip: 'تعديل',
                                         onPressed: () => context
-                                            .go('/invoices/${inv.id}/edit'),
+                                            .go('/invoices/${inv.id}'),
                                         color: AppColors.primary,
                                         bgColor: AppColors.primarySurface,
                                       ),

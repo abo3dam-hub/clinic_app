@@ -635,12 +635,14 @@ class _FinLine extends StatelessWidget {
                   )),
             ),
             if (onDetailsPressed != null)
-              IconButton(
-                icon: const Icon(Icons.info_outline, size: 16),
+              TextButton(
                 onPressed: onDetailsPressed,
-                tooltip: 'تفاصيل',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
+                child: const Text('تفاصيل', style: TextStyle(fontSize: 12)),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
               ),
             const SizedBox(width: 8),
             Text(value,
