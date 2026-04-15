@@ -10,7 +10,7 @@ import 'package:clinic_app/shared/widgets/app_widgets.dart';
 import 'package:clinic_app/features/patients/domain/entities/patient.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Root Screen
+// Root Screen ali reset
 // ─────────────────────────────────────────────────────────────────────────────
 
 class DashboardScreen extends ConsumerWidget {
