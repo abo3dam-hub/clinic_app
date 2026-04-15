@@ -54,13 +54,6 @@ final balanceSheetProvider = FutureProvider.family<BalanceSheet, String>(
     (ref, asOfDate) =>
         ref.watch(ledgerRepositoryProvider).getBalanceSheet(asOfDate));
 
-final accountLedgerProvider =
-    FutureProvider.family<List<LedgerEntry>, Map<String, dynamic>>(
-        (ref, params) => ref.watch(ledgerRepositoryProvider).getGeneralLedger(
-            accountId: params['accountId'],
-            fromDate: params['fromDate'],
-            toDate: params['toDate']));
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 class AccountingScreen extends ConsumerStatefulWidget {
@@ -453,6 +446,12 @@ class _IncomeStatementTab extends ConsumerWidget {
 
   Future<void> _showAccountLedgerDialog(BuildContext context, WidgetRef ref,
       int accountId, AccountingPeriod period) async {
+    final ledgerFuture = ref.read(ledgerRepositoryProvider).getGeneralLedger(
+          accountId: accountId,
+          fromDate: period.fromDate,
+          toDate: period.toDate,
+        );
+
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -460,17 +459,17 @@ class _IncomeStatementTab extends ConsumerWidget {
         content: SizedBox(
           width: 600,
           height: 400,
-          child: Consumer(builder: (context, dialogRef, _) {
-            final ledgerAsync = dialogRef.watch(accountLedgerProvider({
-              'accountId': accountId,
-              'fromDate': period.fromDate,
-              'toDate': period.toDate,
-            }));
-
-            return ledgerAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('خطأ: $e')),
-              data: (entries) => entries.isEmpty
+          child: FutureBuilder<List<LedgerEntry>>(
+            future: ledgerFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('خطأ: ${snapshot.error}'));
+              }
+              final entries = snapshot.data ?? const [];
+              return entries.isEmpty
                   ? const Center(child: Text('لا توجد حركات'))
                   : SingleChildScrollView(
                       child: AppTable(
@@ -496,9 +495,9 @@ class _IncomeStatementTab extends ConsumerWidget {
                                 ])
                             .toList(),
                       ),
-                    ),
-            );
-          }),
+                    );
+            },
+          ),
         ),
         actions: [
           TextButton(
