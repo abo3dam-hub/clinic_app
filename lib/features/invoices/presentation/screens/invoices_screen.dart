@@ -492,9 +492,14 @@ class InvoiceDetailScreen extends ConsumerWidget {
           ref.invalidate(pendingBalancesProvider);
         }
         // Invalidate accounting providers
-        ref.invalidate(trialBalanceProvider(AccountingPeriod(fromDate: '2020-01-01', toDate: DateTime.now().toIso8601String().split('T')[0])));
-        ref.invalidate(incomeStatementProvider(AccountingPeriod(fromDate: '2020-01-01', toDate: DateTime.now().toIso8601String().split('T')[0])));
-        ref.invalidate(balanceSheetProvider(DateTime.now().toIso8601String().split('T')[0]));
+        ref.invalidate(trialBalanceProvider(AccountingPeriod(
+            fromDate: '2020-01-01',
+            toDate: DateTime.now().toIso8601String().split('T')[0])));
+        ref.invalidate(incomeStatementProvider(AccountingPeriod(
+            fromDate: '2020-01-01',
+            toDate: DateTime.now().toIso8601String().split('T')[0])));
+        ref.invalidate(balanceSheetProvider(
+            DateTime.now().toIso8601String().split('T')[0]));
         if (context.mounted) showSnack(context, 'تم حذف الدفعة');
       } catch (e) {
         if (context.mounted) showSnack(context, 'خطأ: $e', error: true);
@@ -768,9 +773,14 @@ Future<void> _showQuickPaymentDialog(
                 ref.invalidate(patientProfileProvider(inv.patientId));
                 ref.invalidate(pendingBalancesProvider);
                 // Invalidate accounting providers
-                ref.invalidate(trialBalanceProvider(AccountingPeriod(fromDate: '2020-01-01', toDate: DateTime.now().toIso8601String().split('T')[0])));
-                ref.invalidate(incomeStatementProvider(AccountingPeriod(fromDate: '2020-01-01', toDate: DateTime.now().toIso8601String().split('T')[0])));
-                ref.invalidate(balanceSheetProvider(DateTime.now().toIso8601String().split('T')[0]));
+                ref.invalidate(trialBalanceProvider(AccountingPeriod(
+                    fromDate: '2020-01-01',
+                    toDate: DateTime.now().toIso8601String().split('T')[0])));
+                ref.invalidate(incomeStatementProvider(AccountingPeriod(
+                    fromDate: '2020-01-01',
+                    toDate: DateTime.now().toIso8601String().split('T')[0])));
+                ref.invalidate(balanceSheetProvider(
+                    DateTime.now().toIso8601String().split('T')[0]));
 
                 if (context.mounted)
                   showSnack(context, 'تم تسجيل الدفعة بنجاح');

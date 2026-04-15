@@ -658,9 +658,14 @@ class _ProceduresCard extends ConsumerWidget {
       ref.invalidate(pendingBalancesProvider);
       ref.invalidate(dailyReportProvider(today));
       // Invalidate accounting providers
-      ref.invalidate(trialBalanceProvider(AccountingPeriod(fromDate: '2020-01-01', toDate: DateTime.now().toIso8601String().split('T')[0])));
-      ref.invalidate(incomeStatementProvider(AccountingPeriod(fromDate: '2020-01-01', toDate: DateTime.now().toIso8601String().split('T')[0])));
-      ref.invalidate(balanceSheetProvider(DateTime.now().toIso8601String().split('T')[0]));
+      ref.invalidate(trialBalanceProvider(AccountingPeriod(
+          fromDate: '2020-01-01',
+          toDate: DateTime.now().toIso8601String().split('T')[0])));
+      ref.invalidate(incomeStatementProvider(AccountingPeriod(
+          fromDate: '2020-01-01',
+          toDate: DateTime.now().toIso8601String().split('T')[0])));
+      ref.invalidate(
+          balanceSheetProvider(DateTime.now().toIso8601String().split('T')[0]));
 
       if (context.mounted) {
         showSnack(context,
@@ -705,9 +710,14 @@ class _ProceduresCard extends ConsumerWidget {
       ref.invalidate(pendingBalancesProvider);
       ref.invalidate(dailyReportProvider(today));
       // Invalidate accounting providers
-      ref.invalidate(trialBalanceProvider(AccountingPeriod(fromDate: '2020-01-01', toDate: DateTime.now().toIso8601String().split('T')[0])));
-      ref.invalidate(incomeStatementProvider(AccountingPeriod(fromDate: '2020-01-01', toDate: DateTime.now().toIso8601String().split('T')[0])));
-      ref.invalidate(balanceSheetProvider(DateTime.now().toIso8601String().split('T')[0]));
+      ref.invalidate(trialBalanceProvider(AccountingPeriod(
+          fromDate: '2020-01-01',
+          toDate: DateTime.now().toIso8601String().split('T')[0])));
+      ref.invalidate(incomeStatementProvider(AccountingPeriod(
+          fromDate: '2020-01-01',
+          toDate: DateTime.now().toIso8601String().split('T')[0])));
+      ref.invalidate(
+          balanceSheetProvider(DateTime.now().toIso8601String().split('T')[0]));
 
       if (context.mounted) showSnack(context, 'تم حذف الإجراء');
     } catch (e) {
