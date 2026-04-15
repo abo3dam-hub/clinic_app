@@ -90,6 +90,16 @@ class VisitsScreen extends ConsumerWidget {
                                     color: AppColors.primary,
                                     bgColor: AppColors.primarySurface,
                                   ),
+                                  const SizedBox(width: AppSpacing.xs),
+                                  IconActionButton(
+                                    icon: Icons.delete_outline,
+                                    tooltip: 'حذف',
+                                    onPressed: v.isLocked
+                                        ? null
+                                        : () => _deleteVisit(context, ref, v),
+                                    color: AppColors.error,
+                                    bgColor: AppColors.errorSurface,
+                                  ),
                                 ]),
                               ])
                           .toList(),
@@ -99,6 +109,51 @@ class VisitsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _deleteVisit(
+      BuildContext context, WidgetRef ref, Visit visit) async {
+    // Check for linked invoice and payments
+    final invoiceRepo = ref.read(invoiceRepositoryProvider);
+    final invoice = await invoiceRepo.getByVisitId(visit.id!);
+    if (invoice != null) {
+      final payments = await invoiceRepo.getPaymentsForInvoice(invoice.id!);
+      if (payments.isNotEmpty) {
+        await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('لا يمكن الحذف'),
+            content: const Text(
+                'لا يمكن حذف الزيارة لأنها تحتوي على فاتورة مدفوعة. يرجى إلغاء الفاتورة أولاً.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('موافق'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+    }
+
+    final ok = await ConfirmDialog.show(
+      context,
+      title: 'حذف الزيارة',
+      message:
+          'هل تريد حذف زيارة "${visit.patientName}"؟\n\nسيتم حذف جميع الإجراءات والفاتورة المرتبطة.',
+      isDanger: true,
+    );
+    if (!ok) return;
+
+    try {
+      final visitRepo = ref.read(visitRepositoryProvider);
+      await visitRepo.delete(visit.id!);
+      ref.invalidate(visitsProvider);
+      if (context.mounted) showSnack(context, 'تم حذف الزيارة');
+    } catch (e) {
+      if (context.mounted) showSnack(context, 'خطأ: $e', error: true);
+    }
   }
 }
 

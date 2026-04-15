@@ -54,6 +54,13 @@ final balanceSheetProvider = FutureProvider.family<BalanceSheet, String>(
     (ref, asOfDate) =>
         ref.watch(ledgerRepositoryProvider).getBalanceSheet(asOfDate));
 
+final accountLedgerProvider =
+    FutureProvider.family<List<LedgerEntry>, Map<String, dynamic>>(
+        (ref, params) => ref.watch(ledgerRepositoryProvider).getGeneralLedger(
+            accountId: params['accountId'],
+            fromDate: params['fromDate'],
+            toDate: params['toDate']));
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 class AccountingScreen extends ConsumerStatefulWidget {
@@ -373,7 +380,10 @@ class _IncomeStatementTab extends ConsumerWidget {
                 const SectionHeader(title: 'الإيرادات'),
                 const SizedBox(height: AppSpacing.md),
                 ...pl.revenueLines.map((l) => _FinLine(
-                    label: l.accountName, value: '\$${fmt.format(l.amount)}')),
+                    label: l.accountName,
+                    value: '\$${fmt.format(l.amount)}',
+                    onDetailsPressed: () => _showAccountLedgerDialog(
+                        context, ref, l.accountId, period))),
                 const Divider(height: 20),
                 _FinLine(
                     label: 'إجمالي الإيرادات',
@@ -391,7 +401,10 @@ class _IncomeStatementTab extends ConsumerWidget {
                 const SectionHeader(title: 'المصروفات'),
                 const SizedBox(height: AppSpacing.md),
                 ...pl.expenseLines.map((l) => _FinLine(
-                    label: l.accountName, value: '\$${fmt.format(l.amount)}')),
+                    label: l.accountName,
+                    value: '\$${fmt.format(l.amount)}',
+                    onDetailsPressed: () => _showAccountLedgerDialog(
+                        context, ref, l.accountId, period))),
                 const Divider(height: 20),
                 _FinLine(
                     label: 'إجمالي المصروفات',
@@ -415,6 +428,63 @@ class _IncomeStatementTab extends ConsumerWidget {
             ),
           ),
         ]),
+      ),
+    );
+  }
+
+  Future<void> _showAccountLedgerDialog(BuildContext context, WidgetRef ref,
+      int accountId, AccountingPeriod period) async {
+    final ledgerAsync = ref.watch(accountLedgerProvider({
+      'accountId': accountId,
+      'fromDate': period.fromDate,
+      'toDate': period.toDate,
+    }));
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('كشف الحساب التفصيلي'),
+        content: SizedBox(
+          width: 600,
+          height: 400,
+          child: ledgerAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('خطأ: $e')),
+            data: (entries) => entries.isEmpty
+                ? const Center(child: Text('لا توجد حركات'))
+                : SingleChildScrollView(
+                    child: AppTable(
+                      headers: const [
+                        'التاريخ',
+                        'الوصف',
+                        'المرجع',
+                        'مدين',
+                        'دائن',
+                        'الرصيد'
+                      ],
+                      rows: entries
+                          .map((e) => [
+                                Text(e.date),
+                                Text(e.description),
+                                Text(e.reference ?? '-'),
+                                Text(
+                                    '\$${NumberFormat('#,##0.00', 'en').format(e.debit)}'),
+                                Text(
+                                    '\$${NumberFormat('#,##0.00', 'en').format(e.credit)}'),
+                                Text(
+                                    '\$${NumberFormat('#,##0.00', 'en').format(e.runningBalance)}'),
+                              ])
+                          .toList(),
+                    ),
+                  ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إغلاق'),
+          ),
+        ],
       ),
     );
   }
@@ -540,12 +610,14 @@ class _FinLine extends StatelessWidget {
   final bool bold;
   final Color? color;
   final bool large;
+  final VoidCallback? onDetailsPressed;
   const _FinLine(
       {required this.label,
       required this.value,
       this.bold = false,
       this.color,
-      this.large = false});
+      this.large = false,
+      this.onDetailsPressed});
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -553,12 +625,24 @@ class _FinLine extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label,
-                style: TextStyle(
-                  color: bold ? AppColors.textPrimary : AppColors.textSecondary,
-                  fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
-                  fontSize: large ? 16 : 14,
-                )),
+            Expanded(
+              child: Text(label,
+                  style: TextStyle(
+                    color:
+                        bold ? AppColors.textPrimary : AppColors.textSecondary,
+                    fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+                    fontSize: large ? 16 : 14,
+                  )),
+            ),
+            if (onDetailsPressed != null)
+              IconButton(
+                icon: const Icon(Icons.info_outline, size: 16),
+                onPressed: onDetailsPressed,
+                tooltip: 'تفاصيل',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            const SizedBox(width: 8),
             Text(value,
                 style: TextStyle(
                   color: color ?? AppColors.textPrimary,

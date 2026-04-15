@@ -252,12 +252,18 @@ class LedgerRepository {
 
     final revenueLines = balances
         .where((b) => b.account.type == AccountType.revenue)
-        .map((b) => PLLine(accountName: b.account.name, amount: b.balance))
+        .map((b) => PLLine(
+            accountId: b.account.id,
+            accountName: b.account.name,
+            amount: b.balance))
         .toList();
 
     final expenseLines = balances
         .where((b) => b.account.type == AccountType.expense)
-        .map((b) => PLLine(accountName: b.account.name, amount: b.balance))
+        .map((b) => PLLine(
+            accountId: b.account.id,
+            accountName: b.account.name,
+            amount: b.balance))
         .toList();
 
     return IncomeStatement(
@@ -389,9 +395,13 @@ class LedgerRepository {
 // ─── Value Objects for Reports ────────────────────────────────────────────────
 
 class PLLine {
+  final int accountId;
   final String accountName;
   final double amount;
-  const PLLine({required this.accountName, required this.amount});
+  const PLLine(
+      {required this.accountId,
+      required this.accountName,
+      required this.amount});
 }
 
 class IncomeStatement {

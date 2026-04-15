@@ -138,6 +138,16 @@ class _InvoicesScreenState extends ConsumerState<InvoicesScreen> {
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
+                                    if (!inv.isLocked)
+                                      IconActionButton(
+                                        icon: Icons.edit_outlined,
+                                        tooltip: 'تعديل',
+                                        onPressed: () => context
+                                            .go('/invoices/${inv.id}/edit'),
+                                        color: AppColors.primary,
+                                        bgColor: AppColors.primarySurface,
+                                      ),
+                                    const SizedBox(width: 8),
                                     if (inv.status != InvoiceStatus.paid &&
                                         !inv.isLocked)
                                       IconActionButton(
@@ -314,6 +324,15 @@ class InvoiceDetailScreen extends ConsumerWidget {
                 if (invoice.isLocked) ...[
                   const SizedBox(width: 8),
                   const StatusChip(label: 'مقفلة', color: AppColors.textHint),
+                ] else ...[
+                  const SizedBox(width: 8),
+                  SecondaryButton(
+                    label: 'تعديل',
+                    icon: Icons.edit_outlined,
+                    compact: true,
+                    onPressed: () =>
+                        _showEditInvoiceDialog(context, ref, invoice, fmt),
+                  ),
                 ],
               ]),
               const SizedBox(height: AppSpacing.lg),
@@ -476,6 +495,91 @@ class InvoiceDetailScreen extends ConsumerWidget {
         if (context.mounted) showSnack(context, 'خطأ: $e', error: true);
       }
     }
+  }
+
+  Future<void> _showEditInvoiceDialog(BuildContext context, WidgetRef ref,
+      Invoice invoice, NumberFormat fmt) async {
+    double additionalDiscount = 0.0;
+    final discountCtrl = TextEditingController(text: '0.00');
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) => AlertDialog(
+          title: const Text('تعديل الفاتورة'),
+          content: SizedBox(
+            width: 400,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('الإجمالي الحالي: ${_money(fmt, invoice.totalAmount)}'),
+                Text('الخصم الحالي: ${_money(fmt, invoice.discount)}'),
+                Text('الصافي الحالي: ${_money(fmt, invoice.netAmount)}'),
+                const SizedBox(height: 16),
+                AppTextField(
+                  label: 'خصم إضافي (\$)',
+                  controller: discountCtrl,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  onChanged: (v) =>
+                      additionalDiscount = double.tryParse(v) ?? 0.0,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'الصافي الجديد: ${_money(fmt, (invoice.netAmount - additionalDiscount).clamp(0.0, double.infinity))}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('إلغاء'),
+            ),
+            PrimaryButton(
+              label: 'تطبيق',
+              onPressed: () async {
+                if (additionalDiscount < 0) {
+                  showSnack(ctx, 'الخصم لا يمكن أن يكون سالباً', error: true);
+                  return;
+                }
+                final newDiscount = invoice.discount + additionalDiscount;
+                if (newDiscount > invoice.totalAmount) {
+                  showSnack(ctx, 'الخصم الإجمالي لا يمكن أن يتجاوز الإجمالي',
+                      error: true);
+                  return;
+                }
+                final newNet = invoice.totalAmount - newDiscount;
+                if (newNet < invoice.paidAmount - 0.001) {
+                  showSnack(ctx, 'الخصم يجعل الصافي أقل من المدفوع',
+                      error: true);
+                  return;
+                }
+                Navigator.pop(ctx);
+                try {
+                  await ref.read(invoiceRepositoryProvider).updateFinancials(
+                        invoiceId: invoice.id!,
+                        discount: newDiscount,
+                        netAmount: newNet,
+                      );
+                  ref.invalidate(invoiceByIdProvider(invoiceId));
+                  ref.invalidate(invoicesProvider);
+                  if (invoice.patientId != null) {
+                    ref.invalidate(patientProfileProvider(invoice.patientId));
+                    ref.invalidate(pendingBalancesProvider);
+                  }
+                  if (context.mounted) showSnack(context, 'تم تطبيق الخصم');
+                } catch (e) {
+                  if (context.mounted)
+                    showSnack(context, 'خطأ: $e', error: true);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

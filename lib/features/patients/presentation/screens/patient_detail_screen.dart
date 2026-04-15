@@ -186,28 +186,9 @@ class _DossierTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. Collect and sort all entries
-    final entries = <DossierEntry>[];
-
-    for (final v in profile.visits) {
-      entries.add(DossierEntry(
-          date: v.visit.visitDate, type: DossierEntryType.visit, data: v));
-    }
-    for (final inv in profile.invoices) {
-      // Assuming invoiceDate is YYYY-MM-DD
-      entries.add(DossierEntry(
-          date: DateTime.parse(inv.invoiceDate),
-          type: DossierEntryType.invoice,
-          data: inv));
-    }
-    for (final p in profile.payments) {
-      entries.add(DossierEntry(
-          date: DateTime.parse(p.paymentDate),
-          type: DossierEntryType.payment,
-          data: p));
-    }
-
-    entries.sort((a, b) => b.date.compareTo(a.date));
+    // 1. Collect visits and sort by date descending
+    final visits = profile.visits
+      ..sort((a, b) => b.visit.visitDate.compareTo(a.visit.visitDate));
 
     return ListView(
       padding: const EdgeInsets.symmetric(
@@ -230,21 +211,22 @@ class _DossierTimeline extends StatelessWidget {
                     borderRadius: BorderRadius.circular(2)),
               ),
               const SizedBox(width: 12),
-              Text('السجل التاريخي الشامل',
+              Text('سجل المريض - الزيارات والفواتير',
                   style: Theme.of(context)
                       .textTheme
                       .headlineSmall
                       ?.copyWith(fontWeight: FontWeight.bold)),
               const Spacer(),
-              Text('${entries.length} سجل مكتشف',
+              Text('${visits.length} زيارة',
                   style:
                       const TextStyle(color: AppColors.textHint, fontSize: 13)),
             ],
           ),
         ),
 
-        // ── Timeline List ────────────────────────────────────────
-        ...entries.map((entry) => _TimelineItem(entry: entry)),
+        // ── Nested Timeline List ────────────────────────────────────────
+        ...visits.map((visitWithProc) =>
+            _NestedVisitItem(visitWithProc: visitWithProc, profile: profile)),
 
         const SizedBox(height: 100),
       ],
@@ -405,6 +387,175 @@ class _MiniStat extends StatelessWidget {
 }
 
 // ─── Timeline Items ──────────────────────────────────────────────────────────
+
+// ─── Nested Visit Item ───────────────────────────────────────────────────────
+
+class _NestedVisitItem extends StatelessWidget {
+  final VisitWithProcedures visitWithProc;
+  final PatientProfile profile;
+  const _NestedVisitItem({required this.visitWithProc, required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = NumberFormat('#,##0.00', 'ar');
+    final visit = visitWithProc.visit;
+
+    // Find related invoices and payments
+    final relatedInvoices =
+        profile.invoices.where((inv) => inv.visitId == visit.id).toList();
+    final relatedPayments = profile.payments
+        .where((p) => relatedInvoices.any((inv) => inv.id == p.invoiceId))
+        .toList();
+
+    return IntrinsicHeight(
+      child: Row(
+        children: [
+          // ── Dot & Line ──────────────────────────────────────────
+          SizedBox(
+            width: 80,
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                    boxShadow: [
+                      BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          blurRadius: 6),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Container(width: 2, color: AppColors.border),
+                ),
+              ],
+            ),
+          ),
+          // ── Content ─────────────────────────────────────────────
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.xl),
+              child: AppCard(
+                padding: const EdgeInsets.all(AppSpacing.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Visit Header
+                    Row(
+                      children: [
+                        Text(
+                            ClinicDateUtils.formatArabicMonth(
+                                visit.visitDate, 'd MMMM yyyy'),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                color: AppColors.textHint)),
+                        const Spacer(),
+                        const _TypeChip(type: DossierEntryType.visit),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text('زيارة طبية - ${visit.doctorName ?? 'الطبيب العام'}',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w900, fontSize: 16)),
+                    if (visit.diagnosis != null) ...[
+                      const SizedBox(height: 8),
+                      Text('التشخيص: ${visit.diagnosis}',
+                          style:
+                              const TextStyle(color: AppColors.textSecondary)),
+                    ],
+                    const SizedBox(height: AppSpacing.md),
+
+                    // Procedures Section
+                    if (visitWithProc.procedures.isNotEmpty) ...[
+                      const Text('الإجراءات الطبية',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
+                      const SizedBox(height: 8),
+                      ...visitWithProc.procedures.map((proc) => Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                    child: Text(
+                                        '${proc.procedureName ?? 'إجراء'} × ${proc.quantity}')),
+                                Text('\$${fmt.format(proc.lineTotal)}',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          )),
+                      const Divider(height: 16),
+                    ],
+
+                    // Invoices Section
+                    if (relatedInvoices.isNotEmpty) ...[
+                      const Text('الفواتير الصادرة',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
+                      const SizedBox(height: 8),
+                      ...relatedInvoices.map((inv) => Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Row(
+                              children: [
+                                Expanded(child: Text('فاتورة #${inv.id}')),
+                                Text('\$${fmt.format(inv.netAmount)}',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600)),
+                                const SizedBox(width: 8),
+                                Text('مدفوع: \$${fmt.format(inv.paidAmount)}',
+                                    style: const TextStyle(
+                                        color: AppColors.success)),
+                                const SizedBox(width: 8),
+                                Text(
+                                    'متبقي: \$${fmt.format(inv.netAmount - inv.paidAmount)}',
+                                    style: TextStyle(
+                                        color:
+                                            inv.netAmount - inv.paidAmount > 0
+                                                ? AppColors.error
+                                                : AppColors.success)),
+                              ],
+                            ),
+                          )),
+                      const Divider(height: 16),
+                    ],
+
+                    // Payments Section
+                    if (relatedPayments.isNotEmpty) ...[
+                      const Text('الدفعات المستلمة',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 14)),
+                      const SizedBox(height: 8),
+                      ...relatedPayments.map((p) => Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                    child: Text(
+                                        '${p.method} - ${ClinicDateUtils.formatArabicMonth(DateTime.parse(p.paymentDate), 'd/M/yyyy')}')),
+                                Text('\$${fmt.format(p.amount)}',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.success)),
+                              ],
+                            ),
+                          )),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _TimelineItem extends StatelessWidget {
   final DossierEntry entry;

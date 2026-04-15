@@ -469,8 +469,8 @@ class _ProceduresCard extends ConsumerWidget {
             TextButton(
                 onPressed: () => Navigator.pop(ctx),
                 child: const Text('إلغاء')),
-            PrimaryButton(
-              label: 'حفظ الإجراء',
+            SecondaryButton(
+              label: 'حفظ فقط',
               onPressed: () async {
                 if (selectedProcedureId == null) return;
                 Navigator.pop(ctx);
@@ -482,6 +482,24 @@ class _ProceduresCard extends ConsumerWidget {
                   unitPrice: price,
                   discount: discount.clamp(0, 100),
                   consumables: selectedConsumables,
+                  createInvoice: false,
+                );
+              },
+            ),
+            PrimaryButton(
+              label: 'حفظ وإنشاء فاتورة',
+              onPressed: () async {
+                if (selectedProcedureId == null) return;
+                Navigator.pop(ctx);
+                await _doAddProcedure(
+                  context: context,
+                  ref: ref,
+                  procedureId: selectedProcedureId!,
+                  quantity: quantity,
+                  unitPrice: price,
+                  discount: discount.clamp(0, 100),
+                  consumables: selectedConsumables,
+                  createInvoice: true,
                 );
               },
             ),
@@ -608,6 +626,7 @@ class _ProceduresCard extends ConsumerWidget {
     required double unitPrice,
     required double discount,
     List<VisitConsumable>? consumables,
+    required bool createInvoice,
   }) async {
     try {
       final visitRepo = ref.read(visitRepositoryProvider);
@@ -625,8 +644,10 @@ class _ProceduresCard extends ConsumerWidget {
         consumables: consumables,
       ));
 
-      // 2. Sync / create the invoice atomically
-      await invoiceService.syncInvoiceForVisit(visit.id!, visit.patientId);
+      // 2. Sync / create the invoice if requested
+      if (createInvoice) {
+        await invoiceService.syncInvoiceForVisit(visit.id!, visit.patientId);
+      }
 
       // 3. Invalidate dependent providers
       ref.invalidate(visitProceduresProvider(visit.id!));
@@ -636,8 +657,19 @@ class _ProceduresCard extends ConsumerWidget {
       ref.invalidate(pendingBalancesProvider);
       ref.invalidate(dailyReportProvider(today));
 
-      if (context.mounted)
-        showSnack(context, 'تمت إضافة الإجراء وتحديث الفاتورة');
+      if (context.mounted) {
+        showSnack(context,
+            'تمت إضافة الإجراء${createInvoice ? ' وإنشاء الفاتورة' : ''}');
+
+        // If createInvoice is true, navigate to invoice screen
+        if (createInvoice) {
+          final invoice =
+              await ref.read(invoiceRepositoryProvider).getByVisitId(visit.id!);
+          if (invoice != null) {
+            context.go('/invoices/${invoice.id}');
+          }
+        }
+      }
     } catch (e) {
       if (context.mounted) showSnack(context, 'خطأ: $e', error: true);
     }
