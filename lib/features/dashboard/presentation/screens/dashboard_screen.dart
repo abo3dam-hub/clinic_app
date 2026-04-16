@@ -153,8 +153,8 @@ class _HeaderRow extends StatelessWidget {
           child: Container(
             child: Image.asset(
               'assets/images/logo.png',
-              width: 70,
-              height: 70,
+              width: 100,
+              height: 100,
               fit: BoxFit.contain,
               errorBuilder: (_, __, ___) => Container(
                   width: 100,
@@ -268,7 +268,7 @@ class _StatsRow extends StatelessWidget {
             value: '${fmt.format(report.netCash)} \$',
             subtitle: 'بعد المصروفات',
             icon: Icons.account_balance_outlined,
-            color: const Color(0xFFF59E0B),
+            color: const Color.fromARGB(255, 231, 91, 66),
             route: '/cash-box'),
       ],
     );

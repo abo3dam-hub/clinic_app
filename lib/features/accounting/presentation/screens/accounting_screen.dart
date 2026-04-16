@@ -957,7 +957,7 @@ class _FinancialRow extends StatelessWidget {
               ),
             ),
             if (onTap != null)
-              const Icon(Icons.ads_click, size: 14, color: AppColors.primary),
+              const Icon(Icons.ads_click, size: 22, color: AppColors.primary),
             const SizedBox(width: 8),
             Text(
               fmt.format(amount),
