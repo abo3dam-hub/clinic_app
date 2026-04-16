@@ -142,7 +142,7 @@ class _HeaderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hour = DateTime.now().hour;
-    final greet = hour < 12 ? 'صباح الخير، دكتور' : 'مساء الخير، دكتور';
+    final greet = hour < 12 ? 'صباح الخير' : 'مساء الخير';
     final dateStr =
         ClinicDateUtils.formatArabicMonth(DateTime.now(), 'EEEE، d MMMM yyyy');
 
@@ -151,28 +151,17 @@ class _HeaderRow extends StatelessWidget {
         Hero(
           tag: 'app-logo',
           child: Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 20)
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.asset(
-                'assets/images/logo.png',
-                width: 70,
-                height: 70,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Container(
-                    width: 70,
-                    height: 70,
-                    color: AppColors.primarySurface,
-                    child: const Icon(Icons.medical_services,
-                        color: AppColors.primary, size: 35)),
-              ),
+            child: Image.asset(
+              'assets/images/logo.png',
+              width: 70,
+              height: 70,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => Container(
+                  width: 100,
+                  height: 100,
+                  color: AppColors.primarySurface,
+                  child: const Icon(Icons.medical_services,
+                      color: AppColors.primary, size: 35)),
             ),
           ),
         ),
@@ -255,7 +244,7 @@ class _StatsRow extends StatelessWidget {
             value: '${report.totalVisits}',
             subtitle: '${report.totalPatients} مريض',
             icon: Icons.people_outline,
-            color: const Color(0xFF6366F1),
+            color: const Color.fromARGB(255, 65, 142, 204),
             route: '/visits'),
         const SizedBox(width: 16),
         _ModernStatCard(
@@ -263,7 +252,7 @@ class _StatsRow extends StatelessWidget {
             value: '${fmt.format(report.totalInvoiced)} \$',
             subtitle: 'المبلغ المستحق',
             icon: Icons.receipt_long_outlined,
-            color: const Color(0xFF0EA5E9),
+            color: const Color.fromARGB(255, 81, 193, 245),
             route: '/invoices'),
         const SizedBox(width: 16),
         _ModernStatCard(
@@ -308,11 +297,11 @@ class _ModernStatCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: color,
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                  color: color.withOpacity(0.12),
+                  color: color.withOpacity(0.3),
                   blurRadius: 20,
                   offset: const Offset(0, 8))
             ],
@@ -323,20 +312,20 @@ class _ModernStatCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12)),
-                child: Icon(icon, color: color, size: 24),
+                child: Icon(icon, color: Colors.white, size: 24),
               ),
               const Spacer(),
               Text(value,
                   style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
-                      color: Color(0xFF1E293B))),
+                      color: Colors.white)),
               Text(title,
                   style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey.shade500,
+                      color: Colors.white.withOpacity(0.8),
                       fontWeight: FontWeight.w600)),
             ],
           ),
