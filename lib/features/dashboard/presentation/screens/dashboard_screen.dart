@@ -268,7 +268,7 @@ class _StatsRow extends StatelessWidget {
             value: '${fmt.format(report.netCash)} \$',
             subtitle: 'بعد المصروفات',
             icon: Icons.account_balance_outlined,
-            color: const Color.fromARGB(255, 231, 91, 66),
+            color: const Color.fromARGB(255, 235, 97, 73),
             route: '/cash-box'),
       ],
     );

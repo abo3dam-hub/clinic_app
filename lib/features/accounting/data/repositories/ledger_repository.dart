@@ -1,9 +1,8 @@
 // lib/features/accounting/data/repositories/ledger_repository.dart
 //
 // Implements Chart of Accounts (COA), Journal Entries, and all
-// read-side queries needed for Trial Balance, P&L, and Balance Sheet.
-// Every financial mutation in the app routes through JournalService
-// which calls this repository.
+// read-side queries needed for Trial Balance, P&L, Balance Sheet,
+// and Detailed Statement (كشف الحساب التفصيلي).
 
 import 'package:flutter/foundation.dart';
 import '../../../../core/database/database_helper.dart';
@@ -17,7 +16,6 @@ extension AccountTypeX on AccountType {
   static AccountType fromString(String s) => AccountType.values
       .firstWhere((e) => e.name == s, orElse: () => AccountType.asset);
 
-  /// Normal balance side for this account type.
   bool get normalDebit =>
       this == AccountType.asset || this == AccountType.expense;
 }
@@ -45,7 +43,7 @@ class JournalEntry {
   final String? reference;
   final String entryDate;
   final String description;
-  final String? sourceType; // 'invoice'|'payment'|'expense'|'manual'
+  final String? sourceType;
   final int? sourceId;
   final List<JournalLine> lines;
 
@@ -59,7 +57,6 @@ class JournalEntry {
     this.lines = const [],
   });
 
-  /// Validates that debits == credits (double-entry invariant).
   bool get isBalanced {
     final totalDebit = lines.fold(0.0, (s, l) => s + l.debit);
     final totalCredit = lines.fold(0.0, (s, l) => s + l.credit);
@@ -85,7 +82,7 @@ class JournalLine {
   });
 }
 
-// ─── Ledger Balance (aggregated per account) ──────────────────────────────────
+// ─── Ledger Balance ───────────────────────────────────────────────────────────
 
 class LedgerBalance {
   final Account account;
@@ -98,10 +95,147 @@ class LedgerBalance {
     required this.totalCredit,
   });
 
-  /// Net balance in normal direction (positive = healthy).
   double get balance => account.type.normalDebit
-      ? totalDebit - totalCredit // Asset / Expense: DR normal
-      : totalCredit - totalDebit; // Liability / Equity / Revenue: CR normal
+      ? totalDebit - totalCredit
+      : totalCredit - totalDebit;
+}
+
+// ─── Detailed Statement Entities ─────────────────────────────────────────────
+
+enum StatementEntryType { revenue, expense }
+
+class StatementItem {
+  final String description;
+  final int quantity;
+  final double unitPrice;
+  final double discount;
+  final double total;
+
+  const StatementItem({
+    required this.description,
+    required this.quantity,
+    required this.unitPrice,
+    required this.discount,
+    required this.total,
+  });
+}
+
+class StatementEntry {
+  final int id;
+  final String date;
+  final StatementEntryType type;
+  final double amount;
+  final String description;
+
+  // Revenue specific
+  final String? patientName;
+  final String? patientPhone;
+  final String? doctorName;
+  final String? doctorSpecialty;
+  final String? paymentMethod;
+  final int? invoiceId;
+  final double? invoiceGross;
+  final double? invoiceDiscount;
+  final double? invoiceNet;
+  final String? invoiceStatus;
+  final String? visitDiagnosis;
+  final List<StatementItem> invoiceItems;
+
+  // Expense specific
+  final String? expenseCategory;
+
+  // Common
+  final String? notes;
+  double runningBalance;
+
+  StatementEntry({
+    required this.id,
+    required this.date,
+    required this.type,
+    required this.amount,
+    required this.description,
+    this.patientName,
+    this.patientPhone,
+    this.doctorName,
+    this.doctorSpecialty,
+    this.paymentMethod,
+    this.invoiceId,
+    this.invoiceGross,
+    this.invoiceDiscount,
+    this.invoiceNet,
+    this.invoiceStatus,
+    this.visitDiagnosis,
+    this.invoiceItems = const [],
+    this.expenseCategory,
+    this.notes,
+    this.runningBalance = 0,
+  });
+}
+
+class StatementFilter {
+  final String fromDate;
+  final String toDate;
+  final int? patientId;
+  final String? patientName;
+  final int? doctorId;
+  final String? doctorName;
+
+  const StatementFilter({
+    required this.fromDate,
+    required this.toDate,
+    this.patientId,
+    this.patientName,
+    this.doctorId,
+    this.doctorName,
+  });
+
+  @override
+  bool operator ==(Object o) =>
+      o is StatementFilter &&
+      o.fromDate == fromDate &&
+      o.toDate == toDate &&
+      o.patientId == patientId &&
+      o.doctorId == doctorId;
+
+  @override
+  int get hashCode => Object.hash(fromDate, toDate, patientId, doctorId);
+}
+
+class DetailedStatement {
+  final StatementFilter filter;
+  final List<StatementEntry> entries;
+  final double totalRevenue;
+  final double totalExpenses;
+  double get netBalance => totalRevenue - totalExpenses;
+  int get totalTransactions => entries.length;
+
+  const DetailedStatement({
+    required this.filter,
+    required this.entries,
+    required this.totalRevenue,
+    required this.totalExpenses,
+  });
+
+  Map<String, ({double revenue, double expense})> get dailyAggregates {
+    final map = <String, ({double revenue, double expense})>{};
+    for (final e in entries) {
+      final existing = map[e.date] ?? (revenue: 0.0, expense: 0.0);
+      if (e.type == StatementEntryType.revenue) {
+        map[e.date] =
+            (revenue: existing.revenue + e.amount, expense: existing.expense);
+      } else {
+        map[e.date] =
+            (revenue: existing.revenue, expense: existing.expense + e.amount);
+      }
+    }
+    return map;
+  }
+}
+
+class FilterOption {
+  final int id;
+  final String name;
+  const FilterOption({required this.id, required this.name});
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -111,7 +245,6 @@ class LedgerRepository {
 
   LedgerRepository(this._db);
 
-  // ─── Well-known account codes ─────────────────────────────────
   static const String codeCash = '1100';
   static const String codeAccountsReceivable = '1200';
   static const String codeRevenue = '4100';
@@ -138,8 +271,6 @@ class LedgerRepository {
 
   // ─── Journal Entry Write ──────────────────────────────────────
 
-  /// Inserts a balanced journal entry (header + lines) atomically.
-  /// Throws [ArgumentError] if the entry is not balanced.
   Future<int> postEntry(JournalEntry entry) async {
     if (!entry.isBalanced) {
       throw ArgumentError(
@@ -169,7 +300,6 @@ class LedgerRepository {
     });
   }
 
-  /// Reverse a previously posted entry (e.g. on invoice cancellation).
   Future<void> reverseEntry(int originalEntryId, String date) async {
     final rows = await _db.rawQuery('''
       SELECT jel.*, je.description, je.source_type, je.source_id
@@ -184,8 +314,8 @@ class LedgerRepository {
         .map((r) => JournalLine(
               entryId: 0,
               accountId: r['account_id'] as int,
-              debit: (r['credit'] as num).toDouble(), // swap
-              credit: (r['debit'] as num).toDouble(), // swap
+              debit: (r['credit'] as num).toDouble(),
+              credit: (r['debit'] as num).toDouble(),
             ))
         .toList();
 
@@ -200,8 +330,6 @@ class LedgerRepository {
 
   // ─── Trial Balance ────────────────────────────────────────────
 
-  /// Returns all accounts with their aggregated debit / credit totals
-  /// for the given date range (inclusive). Excludes zero-balance accounts.
   Future<List<LedgerBalance>> getTrialBalance({
     String? fromDate,
     String? toDate,
@@ -280,7 +408,6 @@ class LedgerRepository {
   // ─── Balance Sheet ────────────────────────────────────────────
 
   Future<BalanceSheet> getBalanceSheet(String asOfDate) async {
-    // Include all entries up to and including asOfDate
     final balances = await getTrialBalance(toDate: asOfDate);
 
     double assets = 0;
@@ -309,21 +436,19 @@ class LedgerRepository {
               .add(BSLine(accountName: b.account.name, amount: b.balance));
           break;
         default:
-          break; // Revenue / Expense roll into retained earnings separately
+          break;
       }
     }
 
-    // Net income from inception to asOfDate rolls into equity
     final pl =
         await getIncomeStatement(fromDate: '2000-01-01', toDate: asOfDate);
     equity += pl.netIncome;
-    final totalEquity = equity; // net income already included once
 
     return BalanceSheet(
       asOfDate: asOfDate,
       totalAssets: assets,
       totalLiabilities: liabilities,
-      totalEquity: totalEquity,
+      totalEquity: equity,
       assetLines: assetLines,
       liabilityLines: liabilityLines,
       equityLines: equityLines,
@@ -333,8 +458,6 @@ class LedgerRepository {
 
   // ─── General Ledger ───────────────────────────────────────────
 
-  /// Returns all journal entry lines for a given account, optionally
-  /// filtered by date range.
   Future<List<LedgerEntry>> getGeneralLedger({
     required int accountId,
     String? fromDate,
@@ -354,7 +477,7 @@ class LedgerRepository {
     return rows.map((r) {
       final debit = (r['debit'] as num).toDouble();
       final credit = (r['credit'] as num).toDouble();
-      running += debit - credit; // for asset/expense; caller can flip sign
+      running += debit - credit;
       return LedgerEntry(
         date: r['entry_date'] as String,
         description: r['description'] as String,
@@ -364,6 +487,177 @@ class LedgerRepository {
         runningBalance: running,
       );
     }).toList();
+  }
+
+  // ─── Detailed Statement (كشف الحساب التفصيلي) ────────────────
+
+  Future<DetailedStatement> getDetailedStatement(StatementFilter filter) async {
+    final entries = <StatementEntry>[];
+
+    // 1. Revenue: Payments with full join details
+    final revArgs = <Object?>[filter.fromDate, filter.toDate];
+    var revWhere = 'p.payment_date BETWEEN ? AND ?';
+
+    if (filter.patientId != null) {
+      revWhere += ' AND inv.patient_id = ?';
+      revArgs.add(filter.patientId!);
+    }
+    if (filter.doctorId != null) {
+      revWhere += ' AND d.id = ?';
+      revArgs.add(filter.doctorId!);
+    }
+
+    final revenueRows = await _db.rawQuery('''
+      SELECT
+        p.id               AS payment_id,
+        p.payment_date,
+        p.amount           AS payment_amount,
+        p.method           AS payment_method,
+        p.notes            AS payment_notes,
+        pat.name           AS patient_name,
+        pat.phone          AS patient_phone,
+        d.name             AS doctor_name,
+        d.specialty        AS doctor_specialty,
+        p.invoice_id,
+        inv.total_amount   AS invoice_gross,
+        inv.discount       AS invoice_discount,
+        inv.net_amount     AS invoice_net,
+        inv.status         AS invoice_status,
+        v.diagnosis        AS visit_diagnosis
+      FROM payments p
+      JOIN   invoices inv ON inv.id = p.invoice_id
+      JOIN   patients pat ON pat.id = inv.patient_id
+      LEFT JOIN visits  v ON v.id   = inv.visit_id
+      LEFT JOIN doctors d ON d.id   = v.doctor_id
+      WHERE $revWhere
+      ORDER BY p.payment_date ASC, p.id ASC
+    ''', revArgs);
+
+    for (final r in revenueRows) {
+      final invoiceId = r['invoice_id'] as int;
+      final paymentMethod = r['payment_method'] as String? ?? 'cash';
+
+      // Fetch invoice line items
+      final itemRows = await _db.rawQuery('''
+        SELECT description, quantity, unit_price, discount, total
+        FROM   invoice_items
+        WHERE  invoice_id = ?
+        ORDER  BY id ASC
+      ''', [invoiceId]);
+
+      final items = itemRows
+          .map((i) => StatementItem(
+                description: i['description'] as String,
+                quantity: (i['quantity'] as num).toInt(),
+                unitPrice: (i['unit_price'] as num).toDouble(),
+                discount: (i['discount'] as num).toDouble(),
+                total: (i['total'] as num).toDouble(),
+              ))
+          .toList();
+
+      final patientName = r['patient_name'] as String? ?? '—';
+      final methodAr = _paymentMethodAr(paymentMethod);
+      final desc = 'دفعة $methodAr — فاتورة رقم #$invoiceId — $patientName';
+
+      entries.add(StatementEntry(
+        id: r['payment_id'] as int,
+        date: r['payment_date'] as String,
+        type: StatementEntryType.revenue,
+        amount: (r['payment_amount'] as num).toDouble(),
+        description: desc,
+        patientName: patientName,
+        patientPhone: r['patient_phone'] as String?,
+        doctorName: r['doctor_name'] as String?,
+        doctorSpecialty: r['doctor_specialty'] as String?,
+        paymentMethod: paymentMethod,
+        invoiceId: invoiceId,
+        invoiceGross: (r['invoice_gross'] as num?)?.toDouble(),
+        invoiceDiscount: (r['invoice_discount'] as num?)?.toDouble(),
+        invoiceNet: (r['invoice_net'] as num?)?.toDouble(),
+        invoiceStatus: r['invoice_status'] as String?,
+        visitDiagnosis: r['visit_diagnosis'] as String?,
+        invoiceItems: items,
+        notes: r['payment_notes'] as String?,
+      ));
+    }
+
+    // 2. Expenses (clinic-level, no patient/doctor filter)
+    if (filter.patientId == null && filter.doctorId == null) {
+      final expenseRows = await _db.rawQuery('''
+        SELECT id, expense_date, amount, category, description, notes
+        FROM   expenses
+        WHERE  expense_date BETWEEN ? AND ?
+        ORDER  BY expense_date ASC, id ASC
+      ''', [filter.fromDate, filter.toDate]);
+
+      for (final r in expenseRows) {
+        final category = r['category'] as String? ?? 'عام';
+        final desc = r['description'] as String;
+        entries.add(StatementEntry(
+          id: r['id'] as int,
+          date: r['expense_date'] as String,
+          type: StatementEntryType.expense,
+          amount: (r['amount'] as num).toDouble(),
+          description: desc,
+          expenseCategory: category,
+          notes: r['notes'] as String?,
+        ));
+      }
+    }
+
+    // 3. Sort by date, revenue before expense on same day
+    entries.sort((a, b) {
+      final d = a.date.compareTo(b.date);
+      if (d != 0) return d;
+      if (a.type == StatementEntryType.revenue &&
+          b.type == StatementEntryType.expense) return -1;
+      if (a.type == StatementEntryType.expense &&
+          b.type == StatementEntryType.revenue) return 1;
+      return a.id.compareTo(b.id);
+    });
+
+    // 4. Running balance
+    double running = 0;
+    for (final e in entries) {
+      running += e.type == StatementEntryType.revenue ? e.amount : -e.amount;
+      e.runningBalance = running;
+    }
+
+    // 5. Totals
+    final totalRevenue = entries
+        .where((e) => e.type == StatementEntryType.revenue)
+        .fold(0.0, (s, e) => s + e.amount);
+    final totalExpenses = entries
+        .where((e) => e.type == StatementEntryType.expense)
+        .fold(0.0, (s, e) => s + e.amount);
+
+    debugPrint('[Ledger] DetailedStatement: ${entries.length} entries '
+        'rev=$totalRevenue exp=$totalExpenses');
+
+    return DetailedStatement(
+      filter: filter,
+      entries: entries,
+      totalRevenue: totalRevenue,
+      totalExpenses: totalExpenses,
+    );
+  }
+
+  // ── Filter helper lists ───────────────────────────────────────
+
+  Future<List<FilterOption>> getPatientsForFilter() async {
+    final rows = await _db.query('patients',
+        where: 'is_active = 1', orderBy: 'name ASC');
+    return rows
+        .map((r) => FilterOption(id: r['id'] as int, name: r['name'] as String))
+        .toList();
+  }
+
+  Future<List<FilterOption>> getDoctorsForFilter() async {
+    final rows =
+        await _db.query('doctors', where: 'is_active = 1', orderBy: 'name ASC');
+    return rows
+        .map((r) => FilterOption(id: r['id'] as int, name: r['name'] as String))
+        .toList();
   }
 
   // ─── Helpers ──────────────────────────────────────────────────
@@ -390,6 +684,13 @@ class LedgerRepository {
         isActive: (m['is_active'] as int? ?? 1) == 1,
         sortOrder: m['sort_order'] as int? ?? 0,
       );
+
+  static String _paymentMethodAr(String method) => switch (method) {
+        'cash' => 'نقدي',
+        'card' => 'بطاقة',
+        'transfer' => 'تحويل',
+        _ => 'أخرى',
+      };
 }
 
 // ─── Value Objects for Reports ────────────────────────────────────────────────
@@ -438,7 +739,7 @@ class BalanceSheet {
   final List<BSLine> assetLines;
   final List<BSLine> liabilityLines;
   final List<BSLine> equityLines;
-  final double netIncome; // current-period net income included in equity
+  final double netIncome;
 
   const BalanceSheet({
     required this.asOfDate,
@@ -451,7 +752,6 @@ class BalanceSheet {
     required this.netIncome,
   });
 
-  /// Assets = Liabilities + Equity (accounting equation check).
   bool get isBalanced =>
       (totalAssets - (totalLiabilities + totalEquity)).abs() < 0.01;
 }

@@ -13,6 +13,8 @@ import 'package:printing/printing.dart';
 
 import '../../features/invoices/domain/entities/invoice.dart';
 import '../../features/reports/domain/services/report_service.dart';
+import '../../features/accounting/data/repositories/ledger_repository.dart'
+    show DetailedStatement, StatementEntry, StatementEntryType;
 import '../../features/doctors/domain/services/doctor_revenue_service.dart';
 import '../../features/accounting/data/repositories/ledger_repository.dart';
 
@@ -930,4 +932,347 @@ class PdfExportService {
         AccountType.revenue => 'إيراد',
         AccountType.expense => 'مصروف',
       };
+
+  // ─── Detailed Statement PDF ─────────────────────────────────────────────
+
+  Future<Uint8List> generateDetailedStatementPdf(DetailedStatement stmt) async {
+    await _Pdf.loadFonts();
+    final doc = pw.Document();
+    final numFmt = NumberFormat('#,##0.00', 'ar');
+    final f = stmt.filter;
+
+    // Group entries by date
+    final grouped = <String, List<StatementEntry>>{};
+    for (final e in stmt.entries) {
+      (grouped[e.date] ??= []).add(e);
+    }
+    final sortedDates = grouped.keys.toList()..sort();
+
+    // Build content widgets
+    final contentWidgets = <pw.Widget>[];
+
+    // Summary header
+    contentWidgets.add(
+      pw.Container(
+        padding: const pw.EdgeInsets.all(14),
+        decoration: pw.BoxDecoration(
+          color: _Pdf.surface,
+          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+          border: pw.Border.all(color: _Pdf.border, width: 0.5),
+        ),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+          children: [
+            _pdfStatBox('إجمالي الإيرادات', numFmt.format(stmt.totalRevenue),
+                _Pdf.secondary),
+            _pdfStatBox('إجمالي المصروفات', numFmt.format(stmt.totalExpenses),
+                _Pdf.errorClr),
+            _pdfStatBox('صافي الربح', numFmt.format(stmt.netBalance.abs()),
+                stmt.netBalance >= 0 ? _Pdf.secondary : _Pdf.errorClr),
+            _pdfStatBox(
+                'عدد الحركات', '${stmt.totalTransactions}', _Pdf.primary),
+          ],
+        ),
+      ),
+    );
+    contentWidgets.add(pw.SizedBox(height: 16));
+
+    // Active filters line
+    if (f.patientName != null || f.doctorName != null) {
+      final filterParts = <String>[];
+      if (f.patientName != null) filterParts.add('المريض: ${f.patientName}');
+      if (f.doctorName != null) filterParts.add('الطبيب: ${f.doctorName}');
+      contentWidgets.add(pw.Container(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: pw.BoxDecoration(
+          color: PdfColor.fromInt(0xFFE8F4F8),
+          borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+        ),
+        child: pw.Text('فلترة حسب: ${filterParts.join(' | ')}',
+            style: _Pdf.style(size: 9, color: _Pdf.primary)),
+      ));
+      contentWidgets.add(pw.SizedBox(height: 12));
+    }
+
+    // Timeline entries grouped by day
+    for (final date in sortedDates) {
+      final dayEntries = grouped[date]!;
+      final dayRev = dayEntries
+          .where((e) => e.type == StatementEntryType.revenue)
+          .fold(0.0, (s, e) => s + e.amount);
+      final dayExp = dayEntries
+          .where((e) => e.type == StatementEntryType.expense)
+          .fold(0.0, (s, e) => s + e.amount);
+
+      // Day header
+      contentWidgets.add(
+        pw.Container(
+          margin: const pw.EdgeInsets.only(top: 10, bottom: 4),
+          padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+          decoration: pw.BoxDecoration(
+            color: PdfColor.fromInt(0xFFECFDF5),
+            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(16)),
+            border:
+                pw.Border.all(color: PdfColor.fromInt(0xFF10B981), width: 0.5),
+          ),
+          child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(date,
+                    style: _Pdf.style(
+                        size: 10,
+                        bold: true,
+                        color: PdfColor.fromInt(0xFF10B981))),
+                pw.Row(children: [
+                  if (dayRev > 0)
+                    pw.Text('+${numFmt.format(dayRev)}',
+                        style: _Pdf.style(
+                            size: 9, bold: true, color: _Pdf.secondary)),
+                  if (dayRev > 0 && dayExp > 0)
+                    pw.Text('  |  ',
+                        style: _Pdf.style(size: 9, color: _Pdf.textGrey)),
+                  if (dayExp > 0)
+                    pw.Text('-${numFmt.format(dayExp)}',
+                        style: _Pdf.style(
+                            size: 9, bold: true, color: _Pdf.errorClr)),
+                ]),
+              ]),
+        ),
+      );
+
+      // Each entry in the day
+      for (final entry in dayEntries) {
+        final isRev = entry.type == StatementEntryType.revenue;
+        final entryColor = isRev ? _Pdf.secondary : _Pdf.errorClr;
+        final bgColor =
+            isRev ? PdfColor.fromInt(0xFFF0FDF4) : PdfColor.fromInt(0xFFFFF5F5);
+
+        contentWidgets.add(
+          pw.Container(
+            margin: const pw.EdgeInsets.only(bottom: 4, right: 8, left: 8),
+            padding: const pw.EdgeInsets.all(10),
+            decoration: pw.BoxDecoration(
+              color: bgColor,
+              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
+              border: pw.Border.all(
+                  color: PdfColor(
+                      entryColor.red, entryColor.green, entryColor.blue, 0.3),
+                  width: 0.5),
+            ),
+            child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  // Main row
+                  pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      children: [
+                        pw.Expanded(
+                          child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text(entry.description,
+                                    style: _Pdf.style(size: 10, bold: true)),
+                                if (entry.patientName != null)
+                                  pw.Text('المريض: ${entry.patientName}',
+                                      style: _Pdf.style(
+                                          size: 9, color: _Pdf.textGrey)),
+                                if (entry.doctorName != null)
+                                  pw.Text('الطبيب: ${entry.doctorName}',
+                                      style: _Pdf.style(
+                                          size: 9, color: _Pdf.textGrey)),
+                                if (entry.expenseCategory != null)
+                                  pw.Text('الفئة: ${entry.expenseCategory}',
+                                      style: _Pdf.style(
+                                          size: 9, color: _Pdf.textGrey)),
+                              ]),
+                        ),
+                        pw.Column(
+                            crossAxisAlignment: pw.CrossAxisAlignment.end,
+                            children: [
+                              pw.Text(numFmt.format(entry.amount),
+                                  style: _Pdf.style(
+                                      size: 12, bold: true, color: entryColor)),
+                              pw.Text(
+                                  'الرصيد: ${numFmt.format(entry.runningBalance)}',
+                                  style: _Pdf.style(
+                                      size: 8, color: _Pdf.textGrey)),
+                            ]),
+                      ]),
+
+                  // Invoice items (if any)
+                  if (entry.invoiceItems.isNotEmpty) ...[
+                    pw.SizedBox(height: 6),
+                    pw.Divider(color: _Pdf.border, thickness: 0.5),
+                    pw.SizedBox(height: 4),
+                    pw.Table(
+                      border:
+                          pw.TableBorder.all(color: _Pdf.border, width: 0.3),
+                      columnWidths: {
+                        0: const pw.FlexColumnWidth(3),
+                        1: const pw.FixedColumnWidth(30),
+                        2: const pw.FixedColumnWidth(50),
+                        3: const pw.FixedColumnWidth(50),
+                      },
+                      children: [
+                        pw.TableRow(
+                          decoration: pw.BoxDecoration(
+                              color: PdfColor.fromInt(0xFFE2E8F0)),
+                          children: [
+                            _pdfTh('الخدمة / الإجراء'),
+                            _pdfTh('الكمية'),
+                            _pdfTh('السعر'),
+                            _pdfTh('المجموع'),
+                          ],
+                        ),
+                        ...entry.invoiceItems.map((item) => pw.TableRow(
+                              children: [
+                                _pdfTd(item.description),
+                                _pdfTd('${item.quantity}'),
+                                _pdfTd(numFmt.format(item.unitPrice)),
+                                _pdfTd(numFmt.format(item.total), bold: true),
+                              ],
+                            )),
+                      ],
+                    ),
+                    if (entry.invoiceNet != null) ...[
+                      pw.SizedBox(height: 4),
+                      pw.Row(
+                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                          children: [
+                            if ((entry.invoiceDiscount ?? 0) > 0)
+                              pw.Text(
+                                  'الخصم: -${numFmt.format(entry.invoiceDiscount!)}',
+                                  style: _Pdf.style(
+                                      size: 8,
+                                      color: PdfColor.fromInt(0xFFFB8C00))),
+                            pw.Text(
+                                'صافي الفاتورة: ${numFmt.format(entry.invoiceNet!)}',
+                                style: _Pdf.style(
+                                    size: 9, bold: true, color: _Pdf.primary)),
+                          ]),
+                    ],
+                  ],
+
+                  // Extra details
+                  if (entry.visitDiagnosis != null &&
+                      entry.visitDiagnosis!.isNotEmpty) ...[
+                    pw.SizedBox(height: 4),
+                    pw.Text('التشخيص: ${entry.visitDiagnosis}',
+                        style: _Pdf.style(size: 8, color: _Pdf.textGrey)),
+                  ],
+                  if (entry.notes != null && entry.notes!.isNotEmpty) ...[
+                    pw.SizedBox(height: 2),
+                    pw.Text('ملاحظات: ${entry.notes}',
+                        style: _Pdf.style(size: 8, color: _Pdf.textGrey)),
+                  ],
+                ]),
+          ),
+        );
+      }
+    }
+
+    // Footer totals
+    contentWidgets.add(pw.SizedBox(height: 16));
+    contentWidgets.add(pw.Divider(color: _Pdf.border));
+    contentWidgets.add(pw.SizedBox(height: 8));
+    contentWidgets.add(
+      pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceAround, children: [
+        pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
+          pw.Text('إجمالي الإيرادات',
+              style: _Pdf.style(size: 9, color: _Pdf.textGrey)),
+          pw.Text(numFmt.format(stmt.totalRevenue),
+              style: _Pdf.style(size: 13, bold: true, color: _Pdf.secondary)),
+        ]),
+        pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
+          pw.Text('إجمالي المصروفات',
+              style: _Pdf.style(size: 9, color: _Pdf.textGrey)),
+          pw.Text(numFmt.format(stmt.totalExpenses),
+              style: _Pdf.style(size: 13, bold: true, color: _Pdf.errorClr)),
+        ]),
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: pw.BoxDecoration(
+            color: stmt.netBalance >= 0
+                ? PdfColor.fromInt(0xFFECFDF5)
+                : PdfColor.fromInt(0xFFFFF5F5),
+            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+            border: pw.Border.all(
+                color: stmt.netBalance >= 0 ? _Pdf.secondary : _Pdf.errorClr,
+                width: 0.5),
+          ),
+          child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: [
+                pw.Text('صافي الربح',
+                    style: _Pdf.style(size: 9, color: _Pdf.textGrey)),
+                pw.Text(
+                    '${stmt.netBalance < 0 ? '-' : ''}${numFmt.format(stmt.netBalance.abs())}',
+                    style: _Pdf.style(
+                        size: 14,
+                        bold: true,
+                        color: stmt.netBalance >= 0
+                            ? _Pdf.secondary
+                            : _Pdf.errorClr)),
+              ]),
+        ),
+      ]),
+    );
+
+    // Build PDF pages
+    const int itemsPerPage = 20;
+    final pages = <pw.Widget>[];
+    for (var i = 0; i < contentWidgets.length; i += itemsPerPage) {
+      final slice = contentWidgets.sublist(
+          i,
+          i + itemsPerPage < contentWidgets.length
+              ? i + itemsPerPage
+              : contentWidgets.length);
+      pages.add(pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start, children: slice));
+    }
+
+    final dateRange = '${f.fromDate} — ${f.toDate}';
+
+    doc.addPage(pw.MultiPage(
+      textDirection: pw.TextDirection.rtl,
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(24),
+      header: (ctx) =>
+          _Pdf.header('عيادة ليورا', 'كشف الحساب التفصيلي', dateRange),
+      footer: (ctx) => pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text('صفحة ${ctx.pageNumber} من ${ctx.pagesCount}',
+              style: _Pdf.style(size: 8, color: _Pdf.textGrey)),
+          pw.Text(
+              'تم الإنشاء: ${DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now())}',
+              style: _Pdf.style(size: 8, color: _Pdf.textGrey)),
+        ],
+      ),
+      build: (ctx) => contentWidgets,
+    ));
+
+    return doc.save();
+  }
+
+  // ── PDF table helpers ───────────────────────────────────────
+
+  pw.Widget _pdfStatBox(String label, String value, PdfColor color) =>
+      pw.Column(crossAxisAlignment: pw.CrossAxisAlignment.center, children: [
+        pw.Text(label, style: _Pdf.style(size: 8, color: _Pdf.textGrey)),
+        pw.SizedBox(height: 3),
+        pw.Text(value, style: _Pdf.style(size: 11, bold: true, color: color)),
+      ]);
+
+  pw.Widget _pdfTh(String t) => pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      child: pw.Text(t,
+          style: _Pdf.style(size: 8, bold: true, color: _Pdf.textDark),
+          textAlign: pw.TextAlign.center));
+
+  pw.Widget _pdfTd(String t, {bool bold = false}) => pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      child: pw.Text(t,
+          style: _Pdf.style(size: 8, bold: bold, color: _Pdf.textGrey),
+          textAlign: pw.TextAlign.center));
 }
