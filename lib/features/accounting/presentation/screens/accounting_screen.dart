@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:go_router/go_router.dart';
 
 import 'package:clinic_app/core/providers/repository_providers.dart';
 import '../../data/repositories/ledger_repository.dart';
@@ -76,7 +77,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 4, vsync: this);
+    _tabs = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -109,7 +110,6 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen>
                   _TrialBalanceTab(period: period, fmt: _fmt),
                   _IncomeStatementTab(period: period, fmt: _fmt),
                   _BalanceSheetTab(asOfDate: period.toDate, fmt: _fmt),
-                  _DetailedStatementTab(period: period, fmt: _fmt),
                 ],
               ),
             ),
@@ -156,6 +156,40 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen>
           onTap: () => _refreshAll(ref, period),
           color: AppColors.primary,
         ),
+        const SizedBox(width: 12),
+        // زر الانتقال لشاشة كشف الحساب المستقلة
+        InkWell(
+          onTap: () => context.push('/statement'),
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.primary, AppColors.secondary],
+                begin: Alignment.centerRight,
+                end: Alignment.centerLeft,
+              ),
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3))
+              ],
+            ),
+            child: const Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.receipt_long_rounded, size: 15, color: Colors.white),
+              SizedBox(width: 7),
+              Text('كشف الحساب',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold)),
+              SizedBox(width: 5),
+              Icon(Icons.open_in_new_rounded, size: 13, color: Colors.white70),
+            ]),
+          ),
+        ),
         const Spacer(),
         Text('تصدير التقرير الحالي:',
             style: TextStyle(fontSize: 13, color: AppColors.textHint)),
@@ -196,16 +230,6 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen>
           Tab(text: 'ميزان المراجعة'),
           Tab(text: 'قائمة الدخل'),
           Tab(text: 'الميزانية العمومية'),
-          Tab(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.receipt_long_rounded, size: 15),
-                SizedBox(width: 5),
-                Text('كشف الحساب'),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -213,10 +237,6 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen>
 
   Future<void> _handleExport(BuildContext context, WidgetRef ref,
       {required bool isPdf}) async {
-    if (_tabs.index == 3) {
-      showSnack(context, 'استخدم زر "تصدير PDF" داخل تبويب كشف الحساب');
-      return;
-    }
     final period = ref.read(accountingPeriodProvider);
     final pdfService = ref.read(pdfExportServiceProvider);
     final excelService = ref.read(excelExportServiceProvider);
@@ -260,9 +280,6 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen>
     ref.invalidate(trialBalanceProvider(period));
     ref.invalidate(incomeStatementProvider(period));
     ref.invalidate(balanceSheetProvider(period.toDate));
-    ref.invalidate(detailedStatementProvider);
-    ref.invalidate(patientsFilterProvider);
-    ref.invalidate(doctorsFilterProvider);
   }
 
   String _s(String s) => s.replaceAll('-', '_');

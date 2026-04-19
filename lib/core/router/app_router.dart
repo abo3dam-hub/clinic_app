@@ -20,6 +20,7 @@ import '../../features/cash_box/presentation/screens/cash_box_screen.dart';
 import '../../features/procedures/presentation/screens/procedures_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/accounting/presentation/screens/accounting_screen.dart'; // NEW
+import '../../features/accounting/presentation/screens/statement_screen.dart'; // NEW
 
 final appRouter = GoRouter(
   initialLocation: '/dashboard',
@@ -120,6 +121,11 @@ final appRouter = GoRouter(
         GoRoute(
           path: '/accounting',
           builder: (_, __) => const AccountingScreen(),
+        ),
+        // NEW: كشف الحساب — شاشة مستقلة
+        GoRoute(
+          path: '/statement',
+          builder: (_, __) => const StatementScreen(),
         ),
         GoRoute(
           path: '/backup',
