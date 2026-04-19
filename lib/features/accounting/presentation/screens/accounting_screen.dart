@@ -158,38 +158,7 @@ class _AccountingScreenState extends ConsumerState<AccountingScreen>
         ),
         const SizedBox(width: 12),
         // زر الانتقال لشاشة كشف الحساب المستقلة
-        InkWell(
-          onTap: () => context.push('/statement'),
-          borderRadius: BorderRadius.circular(10),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, AppColors.secondary],
-                begin: Alignment.centerRight,
-                end: Alignment.centerLeft,
-              ),
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3))
-              ],
-            ),
-            child: const Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.receipt_long_rounded, size: 15, color: Colors.white),
-              SizedBox(width: 7),
-              Text('كشف الحساب',
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold)),
-              SizedBox(width: 5),
-              Icon(Icons.open_in_new_rounded, size: 13, color: Colors.white70),
-            ]),
-          ),
-        ),
+        _StatementNavButton(onTap: () => context.push('/statement')),
         const Spacer(),
         Text('تصدير التقرير الحالي:',
             style: TextStyle(fontSize: 13, color: AppColors.textHint)),
@@ -2157,5 +2126,160 @@ class _EqPart extends StatelessWidget {
               fontWeight: FontWeight.w900,
               color: AppColors.primary)),
     ]);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  _StatementNavButton — زر كشف الحساب التفاعلي
+//  • MouseRegion  → cursor يتغير لـ click
+//  • AnimatedContainer → scale + shadow + glow عند hover
+//  • نبضة خفيفة عند الضغط
+// ═══════════════════════════════════════════════════════════════════════════════
+
+class _StatementNavButton extends StatefulWidget {
+  final VoidCallback onTap;
+  const _StatementNavButton({required this.onTap});
+
+  @override
+  State<_StatementNavButton> createState() => _StatementNavButtonState();
+}
+
+class _StatementNavButtonState extends State<_StatementNavButton>
+    with SingleTickerProviderStateMixin {
+  bool _hovered = false;
+  bool _pressed = false;
+
+  // أيقونة الحركة المتحركة
+  late final AnimationController _iconAnim;
+  late final Animation<double> _iconSlide;
+
+  @override
+  void initState() {
+    super.initState();
+    _iconAnim = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500));
+    _iconSlide = Tween<double>(begin: 0, end: 4).animate(CurvedAnimation(
+      parent: _iconAnim,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _iconAnim.dispose();
+    super.dispose();
+  }
+
+  void _onHoverEnter() {
+    setState(() => _hovered = true);
+    _iconAnim.repeat(reverse: true);
+  }
+
+  void _onHoverExit() {
+    setState(() => _hovered = false);
+    _iconAnim.stop();
+    _iconAnim.animateTo(0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // الألوان الأساسية
+    const Color c1 = AppColors.primary;
+    const Color c2 = AppColors.secondary;
+
+    final double elevation = _hovered ? 14 : 4;
+    final double scale = _pressed ? 0.96 : (_hovered ? 1.04 : 1.0);
+    final double glowOpacity = _hovered ? 0.45 : 0.2;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => _onHoverEnter(),
+      onExit: (_) => _onHoverExit(),
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) {
+          setState(() => _pressed = false);
+          widget.onTap();
+        },
+        onTapCancel: () => setState(() => _pressed = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          transform: Matrix4.identity()
+            ..translate(0.0, _hovered ? -2.0 : 0.0)
+            ..scale(scale),
+          transformAlignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: _hovered
+                  ? [c2, c1] // ينعكس الـ gradient عند hover
+                  : [c1, c2],
+              begin: Alignment.centerRight,
+              end: Alignment.centerLeft,
+            ),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              // ظل رئيسي
+              BoxShadow(
+                color: c1.withOpacity(glowOpacity),
+                blurRadius: elevation,
+                spreadRadius: _hovered ? 1 : 0,
+                offset: Offset(0, _hovered ? 5 : 3),
+              ),
+              // هالة ضوئية عند hover
+              if (_hovered)
+                BoxShadow(
+                  color: c2.withOpacity(0.25),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 0),
+                ),
+            ],
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            // أيقونة تتحرك يميناً ويساراً عند hover
+            AnimatedBuilder(
+              animation: _iconSlide,
+              builder: (_, __) => Transform.translate(
+                offset: Offset(-_iconSlide.value, 0),
+                child: const Icon(Icons.receipt_long_rounded,
+                    size: 17, color: Colors.white),
+              ),
+            ),
+            const SizedBox(width: 8),
+
+            // النص الرئيسي
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              style: TextStyle(
+                fontSize: _hovered ? 14 : 13,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Cairo',
+                letterSpacing: _hovered ? 0.4 : 0,
+              ),
+              child: const Text('كشف الحساب'),
+            ),
+
+            const SizedBox(width: 6),
+
+            // سهم يتحرك يساراً عند hover
+            AnimatedBuilder(
+              animation: _iconSlide,
+              builder: (_, __) => Transform.translate(
+                offset: Offset(_iconSlide.value, 0),
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 200),
+                  opacity: _hovered ? 1.0 : 0.65,
+                  child: const Icon(Icons.arrow_forward_ios_rounded,
+                      size: 12, color: Colors.white),
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
   }
 }
